@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTransactionStore } from "../store/transactionStore";
 import { useAdminStore } from "../store/adminStore";
 import { toast } from "react-toastify";
+import Pagination from "./Pagination";
 import {
   FiArrowDown,
   FiArrowUp,
@@ -38,6 +39,8 @@ export default function PaymentHistory({ status }) {
   const [cookingStatus, setCookingStatus] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [syncingId, setSyncingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
   const [sortConfig, setSortConfig] = useState({
     key: "createdAt",
     direction: "descending",
@@ -74,8 +77,14 @@ export default function PaymentHistory({ status }) {
 
   useEffect(() => {
     clearTransactions();
+    setCurrentPage(1);
     fetchTransactions();
   }, [status, fetchTransactions, clearTransactions]);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
 
   // Format currency
   const formatCurrency = (amount) => {
@@ -126,29 +135,39 @@ export default function PaymentHistory({ status }) {
   };
 
   // Sort transactions
-  const sortedTransactions = [...transactions].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === "ascending" ? -1 : 1;
-    }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === "ascending" ? 1 : -1;
-    }
-    return 0;
-  });
+  const sortedTransactions = useMemo(() => {
+    return [...transactions].sort((a, b) => {
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === "ascending" ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === "ascending" ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [transactions, sortConfig]);
 
   // Filter transactions by search
-  const filteredTransactions = sortedTransactions.filter((transaction) => {
-    const searchLower = searchQuery.toLowerCase();
-    const tableCode = transaction.table_code?.toString() || "";
+  const filteredTransactions = useMemo(() => {
+    return sortedTransactions.filter((transaction) => {
+      const searchLower = searchQuery.toLowerCase();
+      const tableCode = transaction.table_code?.toString() || "";
 
-    return (
-      transaction._id?.toLowerCase().includes(searchLower) ||
-      transaction.customer_name?.toLowerCase().includes(searchLower) ||
-      transaction.customer_email?.toLowerCase().includes(searchLower) ||
-      tableCode.toLowerCase().includes(searchLower) ||
-      transaction.total_amount?.toString().includes(searchLower)
-    );
-  });
+      return (
+        transaction._id?.toLowerCase().includes(searchLower) ||
+        transaction.customer_name?.toLowerCase().includes(searchLower) ||
+        transaction.customer_email?.toLowerCase().includes(searchLower) ||
+        tableCode.toLowerCase().includes(searchLower) ||
+        transaction.total_amount?.toString().includes(searchLower)
+      );
+    });
+  }, [sortedTransactions, searchQuery]);
+
+  const totalPages = Math.ceil(filteredTransactions.length / PAGE_SIZE) || 1;
+  const paginatedTransactions = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredTransactions.slice(start, start + PAGE_SIZE);
+  }, [filteredTransactions, currentPage, PAGE_SIZE]);
 
   // Get cooking status icon - now used in the select dropdown
   const getCookingStatusIcon = (status) => {
@@ -224,7 +243,7 @@ export default function PaymentHistory({ status }) {
             placeholder="Search transactions..."
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
           />
         </div>
       </div>
@@ -320,7 +339,7 @@ export default function PaymentHistory({ status }) {
 
           {/* Transactions */}
           <div className="divide-y divide-gray-200">
-            {filteredTransactions.map((transaction) => (
+            {paginatedTransactions.map((transaction) => (
               <div
                 key={transaction._id}
                 className="px-4 sm:px-6 py-4 hover:bg-gray-50 transition-colors"
@@ -430,50 +449,62 @@ export default function PaymentHistory({ status }) {
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       {/* Customer Info */}
-                      <div className="bg-gray-50 p-4 rounded-lg">
+                      <div>
                         <h3 className="text-lg font-medium text-gray-900 mb-3">
                           Customer Information
                         </h3>
-                        <div className="space-y-2">
-                          <p className="flex items-center text-sm text-gray-600">
-                            <FiUser className="mr-2" />
-                            <span className="font-medium">Name:</span>{" "}
-                            {transaction.customer_name}
-                          </p>
-                          <p className="flex items-center text-sm text-gray-600">
-                            <FiMail className="mr-2" />
-                            <span className="font-medium">Email:</span>{" "}
-                            {transaction.customer_email}
-                          </p>
-                          <p className="flex items-center text-sm text-gray-600">
-                            <FiHash className="mr-2" />
-                            <span className="font-medium">
-                              Table Code:
-                            </span>{" "}
-                            {transaction.table_code || "N/A"}
-                          </p>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500">Name</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {transaction.customer_name}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Email</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {transaction.customer_email}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">
+                                Table Code
+                              </p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {transaction.table_code}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500">Order ID</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {transaction.order_id || "-"}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Order Status */}
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="text-lg font-medium text-gray-900 mb-3">
-                          Order Status
-                        </h3>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {/* Status Management */}
+                        <div className="mt-4 bg-gray-50 p-4 rounded-lg">
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">
+                            Status Management
+                          </h4>
+                          <div className="mb-3">
+                            <label className="block text-sm text-gray-500 mb-1">
                               Cooking Status
                             </label>
                             <div className="flex items-center">
                               {getCookingStatusIcon(
                                 cookingStatus[transaction._id] ||
-                                  transaction.cooking_status
+                                  transaction.cooking_status ||
+                                  "Not Started"
                               )}
                               <select
+                                className="text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded px-2 py-1"
                                 value={
                                   cookingStatus[transaction._id] ||
-                                  transaction.cooking_status
+                                  transaction.cooking_status ||
+                                  "Not Started"
                                 }
                                 onChange={(e) =>
                                   handleCookingStatusChange(
@@ -481,7 +512,6 @@ export default function PaymentHistory({ status }) {
                                     e.target.value
                                   )
                                 }
-                                className="flex-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md disabled:bg-gray-100 disabled:cursor-not-allowed"
                                 disabled={
                                   transaction.status !== "completed" ||
                                   isUpdating
@@ -496,26 +526,6 @@ export default function PaymentHistory({ status }) {
                                 </option>
                                 <option value="Completed">Completed</option>
                               </select>
-                            </div>
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-600">Payment:</span>
-                              {getStatusBadge(transaction.status)}
-                              {transaction.status === "pending" && (
-                                <button
-                                  onClick={(e) => handleSyncStatus(transaction._id, e)}
-                                  disabled={syncingId === transaction._id}
-                                  className="ml-2 px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold flex items-center gap-1 border border-blue-200"
-                                >
-                                  <FiRefreshCw
-                                    className={`text-xs ${
-                                      syncingId === transaction._id ? "animate-spin" : ""
-                                    }`}
-                                  />
-                                  <span>Cek Status Midtrans</span>
-                                </button>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -594,6 +604,17 @@ export default function PaymentHistory({ status }) {
                 )}
               </div>
             ))}
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="px-4 sm:px-6 py-2 bg-gray-50 border-t border-gray-200">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredTransactions.length}
+              pageSize={PAGE_SIZE}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       )}

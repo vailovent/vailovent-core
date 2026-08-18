@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import ProductCard from "../components/ProductCard";
+import Pagination from "../components/Pagination";
 import { useProductStore } from "../store/productStore";
 import { FaShoppingCart, FaSearch, FaTimes, FaHeart, FaUtensils, FaCheckCircle } from "react-icons/fa";
 import { useCartStore } from "../store/cartStore";
@@ -13,6 +14,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all"); // 'all', 'favorites', 'available'
   const [favorites, setFavorites] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 8;
 
   useEffect(() => {
     fetchProducts();
@@ -27,6 +30,7 @@ export default function HomePage() {
   // Sync favorites when user changes tabs or local storage triggers
   const handleFilterClick = (filterType) => {
     setActiveFilter(filterType);
+    setCurrentPage(1);
     if (filterType === "favorites") {
       try {
         const savedFavs = JSON.parse(localStorage.getItem("vailovent_favorites") || "[]");
@@ -35,6 +39,11 @@ export default function HomePage() {
         setFavorites([]);
       }
     }
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
   };
 
   // Format harga ke dalam IDR
@@ -74,6 +83,18 @@ export default function HomePage() {
       return true;
     });
   }, [products, searchQuery, activeFilter, favorites]);
+
+  // Paginate list
+  const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE) || 1;
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredProducts.slice(start, start + PAGE_SIZE);
+  }, [filteredProducts, currentPage]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 350, behavior: "smooth" });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -217,10 +238,21 @@ export default function HomePage() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
+              <div>
+                <div className="grid grid-cols-1 min-[520px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                  {paginatedProducts.map((product) => (
+                    <ProductCard key={product._id} product={product} />
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={filteredProducts.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={handlePageChange}
+                />
               </div>
             )}
           </>

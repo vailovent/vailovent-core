@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useProductStore } from "../store/productStore";
 import ProductForm from "../components/CrudProductForm";
 import AdminNav from "../components/AdminNav";
+import Pagination from "../components/Pagination";
 import { formatCurrency } from "../utils/FormatCurrency";
 
 const ProductList = () => {
@@ -11,6 +12,8 @@ const ProductList = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     fetchProductsAdmin();
@@ -43,11 +46,24 @@ const ProductList = () => {
     fetchProductsAdmin();
   };
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(
+      (product) =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [products, searchTerm]);
+
+  const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE) || 1;
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredProducts.slice(start, start + PAGE_SIZE);
+  }, [filteredProducts, currentPage, PAGE_SIZE]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -83,7 +99,7 @@ const ProductList = () => {
               placeholder="Search products..."
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm w-full focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
           <button
@@ -187,7 +203,7 @@ const ProductList = () => {
         <div className="space-y-4">
           {/* Mobile Card List View (Phones & Small Tablets) */}
           <div className="grid grid-cols-1 gap-3.5 md:hidden">
-            {filteredProducts.map((product) => (
+            {paginatedProducts.map((product) => (
               <div
                 key={product._id}
                 className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col gap-3"
@@ -287,7 +303,7 @@ const ProductList = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredProducts.map((product) => (
+                  {paginatedProducts.map((product) => (
                     <tr
                       key={product._id}
                       className="hover:bg-gray-50 transition-colors"
@@ -402,6 +418,15 @@ const ProductList = () => {
               </table>
             </div>
           </div>
+
+          {/* Pagination Controls */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredProducts.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
       </div>
