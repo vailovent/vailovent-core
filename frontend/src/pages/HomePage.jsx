@@ -142,41 +142,50 @@ export default function HomePage() {
       {/* Main Content & Filter Tabs */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         {/* Filter Chips */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto scrollbar-none">
             <button
               onClick={() => handleFilterClick("all")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm ${
+              className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold shrink-0 whitespace-nowrap transition-all shadow-sm ${
                 activeFilter === "all"
                   ? "bg-blue-600 text-white shadow-blue-500/20"
                   : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
               }`}
             >
-              Semua Menu ({products.length})
+              <span>Semua Menu</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                  activeFilter === "all"
+                    ? "bg-white/20 text-white"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {products.length}
+              </span>
             </button>
 
             <button
               onClick={() => handleFilterClick("available")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm ${
+              className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold shrink-0 whitespace-nowrap transition-all shadow-sm ${
                 activeFilter === "available"
                   ? "bg-blue-600 text-white shadow-blue-500/20"
                   : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
               }`}
             >
               <FaCheckCircle className="text-xs text-emerald-500" />
-              Tersedia
+              <span>Tersedia</span>
             </button>
 
             <button
               onClick={() => handleFilterClick("favorites")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm ${
+              className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold shrink-0 whitespace-nowrap transition-all shadow-sm ${
                 activeFilter === "favorites"
                   ? "bg-pink-600 text-white shadow-pink-500/20"
                   : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
               }`}
             >
               <FaHeart className="text-xs text-pink-500" />
-              Favorit Saya
+              <span>Favorit Saya</span>
             </button>
           </div>
 
