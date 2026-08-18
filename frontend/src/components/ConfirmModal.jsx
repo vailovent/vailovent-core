@@ -1,5 +1,12 @@
-﻿import { useEffect } from "react";
-import { FaExclamationTriangle, FaSignOutAlt, FaTrashAlt, FaTimes } from "react-icons/fa";
+import { useEffect } from "react";
+import {
+  FaExclamationTriangle,
+  FaSignOutAlt,
+  FaTrashAlt,
+  FaTimes,
+  FaUtensils,
+  FaCheckCircle,
+} from "react-icons/fa";
 
 export default function ConfirmModal({
   isOpen,
@@ -9,7 +16,7 @@ export default function ConfirmModal({
   message = "Apakah Anda yakin ingin melanjutkan tindakan ini?",
   confirmText = "Ya, Lanjutkan",
   cancelText = "Batal",
-  variant = "danger", // 'danger', 'warning', 'info'
+  variant = "danger", // 'danger', 'warning', 'info', 'success'
   isLoading = false,
 }) {
   useEffect(() => {
@@ -24,7 +31,41 @@ export default function ConfirmModal({
 
   if (!isOpen) return null;
 
-  const isDanger = variant === "danger";
+  const getVariantStyles = () => {
+    switch (variant) {
+      case "danger":
+        return {
+          icon: <FaTrashAlt />,
+          badgeClass: "bg-red-100 text-red-600 border border-red-200",
+          btnClass:
+            "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-red-500/20",
+        };
+      case "warning":
+        return {
+          icon: <FaSignOutAlt />,
+          badgeClass: "bg-amber-100 text-amber-600 border border-amber-200",
+          btnClass:
+            "bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 shadow-amber-500/20",
+        };
+      case "success":
+        return {
+          icon: <FaCheckCircle />,
+          badgeClass: "bg-emerald-100 text-emerald-600 border border-emerald-200",
+          btnClass:
+            "bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-emerald-500/20",
+        };
+      case "info":
+      default:
+        return {
+          icon: <FaUtensils />,
+          badgeClass: "bg-blue-100 text-blue-600 border border-blue-200",
+          btnClass:
+            "bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 shadow-blue-500/20",
+        };
+    }
+  };
+
+  const currentVariant = getVariantStyles();
 
   return (
     <div
@@ -37,13 +78,9 @@ export default function ConfirmModal({
         {/* Header */}
         <div className="p-5 sm:p-6 flex items-start gap-4">
           <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-xl shadow-sm ${
-              isDanger
-                ? "bg-red-100 text-red-600 border border-red-200"
-                : "bg-amber-100 text-amber-600 border border-amber-200"
-            }`}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-xl shadow-sm ${currentVariant.badgeClass}`}
           >
-            {isDanger ? <FaTrashAlt /> : <FaSignOutAlt />}
+            {currentVariant.icon}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -83,11 +120,7 @@ export default function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={`px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-md transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
-              isDanger
-                ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-red-500/20"
-                : "bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 shadow-blue-500/20"
-            }`}
+            className={`px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-md transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${currentVariant.btnClass}`}
           >
             {isLoading && (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

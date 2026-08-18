@@ -3,6 +3,7 @@ import { useTransactionStore } from "../store/transactionStore";
 import { useAdminStore } from "../store/adminStore";
 import { toast } from "react-toastify";
 import Pagination from "./Pagination";
+import ConfirmModal from "./ConfirmModal";
 import {
   FiArrowDown,
   FiArrowUp,
@@ -81,6 +82,7 @@ export default function PaymentHistory({ status }) {
   const [syncingId, setSyncingId] = useState(null);
   const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [isAutoSyncEnabled, setIsAutoSyncEnabled] = useState(true);
+  const [pendingStatusChange, setPendingStatusChange] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
   const [sortConfig, setSortConfig] = useState({
@@ -236,18 +238,49 @@ export default function PaymentHistory({ status }) {
     });
   };
 
-  // Handle cooking status change
-  const handleCookingStatusChange = async (transactionId, newStatus) => {
+  // Step 1: Trigger confirmation modal before changing cooking status
+  const handleInitiateCookingStatusChange = (transaction, newStatus) => {
+    if (!transaction || !newStatus) return;
+    const currentStatus =
+      cookingStatus[transaction._id] ||
+      transaction.cooking_status ||
+      "Not Started";
+
+    if (newStatus === currentStatus) return;
+
+    setPendingStatusChange({
+      transactionId: transaction._id,
+      newStatus,
+      currentStatus,
+      tableCode: transaction.table_code || "-",
+      customerName: transaction.customer_name || "Pelanggan",
+    });
+  };
+
+  // Step 2: Confirmed cooking status change execution
+  const handleConfirmCookingStatusChange = async () => {
+    if (!pendingStatusChange) return;
+    const { transactionId, newStatus, currentStatus } = pendingStatusChange;
+
     try {
       setCookingStatus((prev) => ({ ...prev, [transactionId]: newStatus }));
       await updateTransactionCookingStatus(transactionId, newStatus);
-      toast.success("Status memasak berhasil diperbarui!");
+      toast.success(`Status memasak berhasil dipindahkan ke "${newStatus}"!`);
+
+      // Update selectedTransaction if currently opened in modal
+      setSelectedTransaction((prev) =>
+        prev && prev._id === transactionId
+          ? { ...prev, cooking_status: newStatus }
+          : prev
+      );
     } catch (error) {
-      toast.error("Gagal memperbarui status memasak!");
+      toast.error(error.message || "Gagal memperbarui status memasak!");
       setCookingStatus((prev) => ({
         ...prev,
-        [transactionId]: prev[transactionId],
+        [transactionId]: currentStatus,
       }));
+    } finally {
+      setPendingStatusChange(null);
     }
   };
 
@@ -761,8 +794,8 @@ export default function PaymentHistory({ status }) {
                           }`}
                           value={currentStatus}
                           onChange={(e) =>
-                            handleCookingStatusChange(
-                              selectedTransaction._id,
+                            handleInitiateCookingStatusChange(
+                              selectedTransaction,
                               e.target.value
                             )
                           }
@@ -876,6 +909,23 @@ export default function PaymentHistory({ status }) {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal for Cooking Status Transitions */}
+      <ConfirmModal
+        isOpen={!!pendingStatusChange}
+        onClose={() => setPendingStatusChange(null)}
+        onConfirm={handleConfirmCookingStatusChange}
+        title="Konfirmasi Pembaruan Status Dapur"
+        message={
+          pendingStatusChange
+            ? `Apakah Anda yakin ingin memindahkan status pesanan Meja ${pendingStatusChange.tableCode} (${pendingStatusChange.customerName}) dari "${pendingStatusChange.currentStatus}" ke "${pendingStatusChange.newStatus}"? Perubahan ini akan langsung diperbarui ke layar pelanggan dan tidak dapat dikembalikan ke tahap sebelumnya.`
+            : ""
+        }
+        confirmText="Ya, Perbarui Status"
+        cancelText="Batal"
+        variant={pendingStatusChange?.newStatus === "Completed" ? "success" : "info"}
+        isLoading={isUpdating}
+      />
     </div>
   );
 }
