@@ -17,6 +17,11 @@ const transactionItemSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    unit_price: {
+      type: Number,
+      required: true,
+      min: [0, "Unit price must be at least 0"],
+    },
     qty: {
       type: Number,
       required: true,

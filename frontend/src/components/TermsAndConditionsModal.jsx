@@ -48,15 +48,10 @@ export default function TermsAndConditionsGate({ children }) {
     // Optional: Track acceptance in analytics
   };
 
+  const [isDeclined, setIsDeclined] = useState(false);
+
   const handleDecline = () => {
-    // Provide feedback before declining
-    if (
-      window.confirm(
-        "Are you sure you want to leave? You won't be able to access our services without accepting the terms."
-      )
-    ) {
-      window.location.href = "/"; // Redirect to home instead of refresh
-    }
+    setIsDeclined(true);
   };
 
   const toggleSection = (no) => {
@@ -77,6 +72,31 @@ export default function TermsAndConditionsGate({ children }) {
   const collapseAllSections = () => {
     setExpandedSections({});
   };
+
+  // If terms are declined, show clean restricted access view
+  if (isModalOpen && isDeclined) {
+    return (
+      <div className="fixed inset-0 bg-gray-900/80 z-[9999] flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 md:p-8 text-center border border-gray-100">
+          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+            <FaTimesCircle />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Akses Layanan Dibatasi
+          </h2>
+          <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+            Untuk menggunakan layanan pemesanan dan menu digital Vailovent, Anda perlu menyetujui Syarat &amp; Ketentuan serta Kebijakan Privasi kami.
+          </p>
+          <button
+            onClick={() => setIsDeclined(false)}
+            className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-md active:scale-[0.98]"
+          >
+            Baca Kembali &amp; Setujui
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // If terms aren't accepted, show the modal and block page content
   if (isModalOpen) {
@@ -138,35 +158,25 @@ export default function TermsAndConditionsGate({ children }) {
                     Loading terms and conditions...
                   </p>
                   <p className="text-gray-400 text-sm mt-2">
-                    This should only take a moment
+                    Please wait while we retrieve the latest terms
                   </p>
                 </div>
               ) : error ? (
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-                  <p className="text-red-700 font-medium">
-                    We couldn&apos;t load the terms and conditions
+                <div className="text-center py-12">
+                  <div className="text-red-500 text-4xl mb-3">⚠️</div>
+                  <p className="text-red-600 font-semibold">{error}</p>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Failed to load terms and conditions
                   </p>
-                  <p className="text-red-600 text-sm mt-1">{error}</p>
                   <button
                     onClick={() => fetchTermsAndConditions()}
-                    className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
                   >
                     Try Again
                   </button>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                    <h3 className="font-bold text-blue-800 mb-1">
-                      Before you continue...
-                    </h3>
-                    <p className="text-blue-700 text-sm">
-                      These terms outline your rights and responsibilities when
-                      using our services. Please read them carefully before
-                      accepting.
-                    </p>
-                  </div>
-
+                <div className="space-y-4">
                   {termsAndConditions.map((term) => (
                     <div
                       key={term.no}
@@ -174,29 +184,20 @@ export default function TermsAndConditionsGate({ children }) {
                     >
                       <button
                         onClick={() => toggleSection(term.no)}
-                        className={`flex items-center justify-between w-full text-left p-4 hover:bg-gray-50 transition-colors ${
-                          expandedSections[term.no] ? "bg-gray-50" : ""
-                        }`}
+                        className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 text-left font-semibold text-gray-800"
                       >
-                        <div className="flex items-start gap-3">
-                          <div className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">
-                            {term.no}
-                          </div>
-                          <h3 className="font-semibold text-gray-800 text-left">
-                            {term.title}
-                          </h3>
-                        </div>
+                        <span>
+                          {term.no}. {term.title}
+                        </span>
                         {expandedSections[term.no] ? (
-                          <FaChevronUp className="text-gray-500 ml-2" />
+                          <FaChevronUp className="text-gray-500" />
                         ) : (
-                          <FaChevronDown className="text-gray-500 ml-2" />
+                          <FaChevronDown className="text-gray-500" />
                         )}
                       </button>
                       {expandedSections[term.no] && (
-                        <div className="px-4 pb-4 pt-2 bg-white">
-                          <div className="prose prose-sm max-w-none text-gray-700">
-                            <p className="whitespace-pre-line">{term.text}</p>
-                          </div>
+                        <div className="p-4 bg-white border-t border-gray-200 text-gray-600 leading-relaxed">
+                          {term.text}
                         </div>
                       )}
                     </div>
@@ -205,39 +206,43 @@ export default function TermsAndConditionsGate({ children }) {
               )}
             </div>
 
-            {/* Progress indicator */}
-            <div className="h-1 bg-gray-200">
-              <div
-                className={`h-full bg-blue-500 transition-all duration-300 ${
-                  hasScrolled ? "w-full" : "w-1/3"
-                }`}
-              ></div>
-            </div>
+            {/* Footer with actions and status */}
+            <div className="border-t border-gray-200 p-4 bg-gray-50">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  {hasScrolled ? (
+                    <>
+                      <FaCheckCircle className="text-green-500 text-base" />
+                      <span>You have reviewed all terms</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                      <span>Please scroll down to review all terms</span>
+                    </>
+                  )}
+                </div>
 
-            {/* Footer with action buttons */}
-            <div className="border-t border-gray-200 p-4 md:p-6 bg-gray-50">
-              <div className="flex flex-col sm:flex-row justify-between gap-3">
-                <button
-                  onClick={handleDecline}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-red-500 text-red-600 hover:bg-red-50 transition-colors font-medium flex-1"
-                >
-                  <FaTimesCircle />
-                  <span>Decline and Exit</span>
-                </button>
-                <button
-                  onClick={handleAccept}
-                  disabled={!hasScrolled}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors flex-1 ${
-                    hasScrolled
-                      ? "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md hover:shadow-lg"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
-                >
-                  <FaCheckCircle />{" "}
-                  {hasScrolled
-                    ? "Accept Terms & Continue"
-                    : "Please read all terms to continue"}
-                </button>
+                <div className="flex gap-3 w-full sm:w-auto">
+                  <button
+                    onClick={handleDecline}
+                    className="flex-1 sm:flex-initial px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium text-sm"
+                  >
+                    Decline
+                  </button>
+                  <button
+                    onClick={handleAccept}
+                    disabled={!hasScrolled}
+                    className={`flex-1 sm:flex-initial px-6 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all ${
+                      hasScrolled
+                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg active:scale-95"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    <FaCheckCircle />
+                    <span>Accept Terms</span>
+                  </button>
+                </div>
               </div>
 
               <div className="mt-4 text-center">
@@ -264,7 +269,7 @@ export default function TermsAndConditionsGate({ children }) {
                   </a>
                 </p>
                 <p className="text-gray-400 text-xs mt-1">
-                  Last updated: {new Date().toLocaleDateString()}
+                  Pembaruan Terakhir: 2025
                 </p>
               </div>
             </div>

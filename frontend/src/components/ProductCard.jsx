@@ -20,7 +20,13 @@ export default function ProductCard({ product }) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
+  const isOutOfStock = product.stock <= 0;
+
   const handleAddToCart = () => {
+    if (isOutOfStock) {
+      toast.error("Maaf, produk ini sedang habis!");
+      return;
+    }
     if (quantity <= 0) {
       toast.error("Please select at least 1 item to add to cart");
       return;
@@ -86,7 +92,9 @@ export default function ProductCard({ product }) {
     );
   };
 
-  const incrementQty = () => setQuantity(quantity + 1);
+  const incrementQty = () => {
+    if (!isOutOfStock) setQuantity(quantity + 1);
+  };
   const decrementQty = () => {
     if (quantity > 1) setQuantity(quantity - 1);
   };
@@ -101,7 +109,9 @@ export default function ProductCard({ product }) {
 
   return (
     <div
-      className="flex flex-col bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 h-full border border-gray-100 hover:border-blue-100 relative"
+      className={`flex flex-col bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 h-full border ${
+        isOutOfStock ? "opacity-75 border-gray-200" : "border-gray-100 hover:border-blue-100"
+      } relative`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -110,12 +120,23 @@ export default function ProductCard({ product }) {
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
+          className={`w-full h-full object-cover transition-all duration-500 ${
+            isOutOfStock ? "grayscale-[50%]" : "group-hover:scale-105"
+          }`}
           loading="lazy"
         />
 
+        {/* Out of Stock Overlay Badge */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <span className="bg-red-600 text-white font-bold px-3 py-1.5 rounded-full text-xs uppercase tracking-wider shadow-md">
+              Stok Habis
+            </span>
+          </div>
+        )}
+
         {/* Interactive overlay */}
-        {isHovered && (
+        {isHovered && !isOutOfStock && (
           <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center transition-opacity duration-300">
             <button
               className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
@@ -181,7 +202,7 @@ export default function ProductCard({ product }) {
           ) : (
             <div className="text-gray-400 text-sm flex items-center">
               <FaInfoCircle className="mr-1" />
-              <span>No reviews yet</span>
+              <span>{isOutOfStock ? "Tidak tersedia" : "Tersedia"}</span>
             </div>
           )}
           {product.category && (
@@ -200,7 +221,7 @@ export default function ProductCard({ product }) {
           >
             {product.description}
           </p>
-          {product.description.length > 80 && (
+          {product.description && product.description.length > 80 && (
             <button
               onClick={toggleDescription}
               className="text-blue-500 hover:text-blue-700 text-sm font-medium mt-1 flex items-center transition-colors"
@@ -224,34 +245,45 @@ export default function ProductCard({ product }) {
         <div className="mt-auto pt-3 border-t border-gray-100">
           <div className="flex items-stretch gap-2">
             {/* Quantity Selector */}
-            <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 flex-1 max-w-[120px]">
+            <div
+              className={`flex items-center border border-gray-200 rounded-lg ${
+                isOutOfStock ? "bg-gray-100 opacity-50" : "bg-gray-50"
+              } flex-1 max-w-[120px]`}
+            >
               <button
                 onClick={decrementQty}
-                className="px-3 py-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors rounded-l-lg"
+                disabled={isOutOfStock}
+                className="px-3 py-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors rounded-l-lg disabled:cursor-not-allowed"
                 aria-label="Decrease quantity"
               >
                 <FaMinus size={12} />
               </button>
               <span className="px-2 py-1 text-base font-medium w-8 text-center bg-white">
-                {quantity}
+                {isOutOfStock ? 0 : quantity}
               </span>
               <button
                 onClick={incrementQty}
-                className="px-3 py-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors rounded-r-lg"
+                disabled={isOutOfStock}
+                className="px-3 py-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors rounded-r-lg disabled:cursor-not-allowed"
                 aria-label="Increase quantity"
               >
                 <FaPlus size={12} />
               </button>
             </div>
 
-            {/* Add to Cart Button - Fixed truncation issue */}
+            {/* Add to Cart Button */}
             <button
               onClick={handleAddToCart}
-              className="flex-1 flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 sm:px-4 sm:py-3 rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm hover:shadow-md active:scale-[0.98] min-w-[80px]"
+              disabled={isOutOfStock}
+              className={`flex-1 flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 rounded-lg font-medium transition-all shadow-sm min-w-[80px] ${
+                isOutOfStock
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:shadow-md active:scale-[0.98]"
+              }`}
             >
               <FaShoppingCart className="mr-1 sm:mr-2" />
               <span className="text-sm sm:text-base whitespace-nowrap">
-                Add
+                {isOutOfStock ? "Habis" : "Add"}
               </span>
             </button>
           </div>

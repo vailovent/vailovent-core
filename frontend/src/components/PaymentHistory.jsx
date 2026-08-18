@@ -492,18 +492,18 @@ export default function PaymentHistory({ status }) {
                                   return (
                                     <tr key={item._id}>
                                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {product?.name || "Unknown Product"}
+                                        {item.product_name || product?.name || "Unknown Product"}
                                       </td>
                                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {item.qty || 0}
                                       </td>
                                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {formatCurrency(product?.price || 0)}
+                                        {formatCurrency(item.unit_price || product?.price || 0)}
                                       </td>
                                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {formatCurrency(
-                                          (product?.price || 0) *
-                                            (item.qty || 0)
+                                          item.amount ||
+                                            (item.unit_price || product?.price || 0) * (item.qty || 0)
                                         )}
                                       </td>
                                     </tr>

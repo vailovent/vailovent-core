@@ -54,6 +54,14 @@ exports.createTransaction = async (req, res) => {
         });
       }
 
+      // Validasi stok produk
+      if (productData.stock <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Produk "${productData.name}" saat ini sedang habis!`,
+        });
+      }
+
       if (
         isNaN(productData.price) ||
         isNaN(product.qty) ||
@@ -74,6 +82,7 @@ exports.createTransaction = async (req, res) => {
           transaction_id: null,
           product_id: product._id || product.product_id,
           product_name: productData.name,
+          unit_price: productData.price,
           qty: product.qty,
           amount,
         })
