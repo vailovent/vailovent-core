@@ -14,6 +14,7 @@ import {
   FiMail,
   FiHash,
   FiCalendar,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import { FaFireAlt, FaUtensils, FaCheckDouble } from "react-icons/fa";
 
@@ -165,9 +166,24 @@ export default function PaymentHistory({ status }) {
           </span>
         );
       case "failed":
+      case "cancelled":
+      case "denied":
         return (
           <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
-            <FiFrown className="mr-1" /> Failed
+            <FiFrown className="mr-1" /> {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        );
+      case "expired":
+        return (
+          <span className="bg-gray-200 text-gray-700 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
+            <FiClock className="mr-1" /> Expired
+          </span>
+        );
+      case "challengeByFDS":
+      case "challengebyFDS":
+        return (
+          <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
+            <FiAlertTriangle className="mr-1" /> Challenge FDS
           </span>
         );
       default:

@@ -2,7 +2,9 @@ const TermsAndConditions = require("../../models/termsAndConditionsSchema");
 
 exports.getTermsAndConditions = async (req, res) => {
   try {
-    const terms_and_conditions = await TermsAndConditions.find().sort({
+    const terms_and_conditions = await TermsAndConditions.find({
+      deleted_At: null,
+    }).sort({
       no: 1,
     });
 

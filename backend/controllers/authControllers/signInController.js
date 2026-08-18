@@ -46,7 +46,7 @@ exports.signIn = async (req, res) => {
       });
     }
 
-    const token = generateTokenAndSetCookie(
+    generateTokenAndSetCookie(
       res,
       existingUser._id,
       existingUser.username
@@ -57,7 +57,6 @@ exports.signIn = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Logged in successfully!",
-      token,
       data: existingUser,
     });
   } catch (error) {

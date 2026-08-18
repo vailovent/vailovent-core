@@ -154,24 +154,6 @@ export default function ProductCard({ product }) {
           </div>
         )}
 
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col space-y-2">
-          {product.isPopular && (
-            <div className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-sm">
-              <FaStar className="mr-1" /> Popular
-            </div>
-          )}
-          {product.isNew && (
-            <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-              New
-            </div>
-          )}
-          {product.discount && (
-            <div className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-              {product.discount}% OFF
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Product Content */}
@@ -184,32 +166,27 @@ export default function ProductCard({ product }) {
           {product.name}
         </h2>
 
-        {/* Price - Moved below name for better hierarchy */}
+        {/* Price */}
         <p className="text-xl font-bold text-green-600 mb-3">
           {formatPrice(product.price)}
         </p>
 
-        {/* Rating and Category */}
+        {/* Stock Status Badge */}
         <div className="flex items-center justify-between mb-3">
-          {product.rating ? (
-            <div className="flex items-center bg-blue-50 px-2 py-1 rounded text-sm">
-              <FaStar className="text-yellow-400 mr-1" />
-              <span className="font-medium">{product.rating}</span>
-              <span className="text-gray-500 text-xs ml-1">
-                ({product.reviewCount || 0})
-              </span>
-            </div>
-          ) : (
-            <div className="text-gray-400 text-sm flex items-center">
-              <FaInfoCircle className="mr-1" />
-              <span>{isOutOfStock ? "Tidak tersedia" : "Tersedia"}</span>
-            </div>
-          )}
-          {product.category && (
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-              {product.category}
-            </span>
-          )}
+          <span
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+              isOutOfStock
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                isOutOfStock ? "bg-red-500" : "bg-emerald-500"
+              }`}
+            />
+            {isOutOfStock ? "Stok Habis" : "Tersedia"}
+          </span>
         </div>
 
         {/* Expandable Description */}

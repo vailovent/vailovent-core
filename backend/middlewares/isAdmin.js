@@ -11,10 +11,13 @@ exports.isAdmin = async (req, res, next) => {
       });
     }
 
-    if (existingUser.username !== "admin") {
+    const isUserAdmin =
+      existingUser.role === "admin" || existingUser.username === "admin";
+
+    if (!isUserAdmin) {
       return res.status(403).json({
         success: false,
-        message: "Forbidden! You are not an admin.",
+        message: "Forbidden! You are not authorized as an admin.",
       });
     }
 

@@ -8,10 +8,14 @@ import PaymentStatus from "../pages/PaymentStatusPage";
 import ProductList from "../pages/ProductListPage";
 import TermsPage from "../pages/TermsPage";
 import PrivacyPage from "../pages/PrivacyPage";
+import NotFoundPage from "../pages/NotFoundPage";
 
 export default function RouterComponent() {
   return (
     <Routes>
+      {/* Root redirect */}
+      <Route path="/" element={<Navigate to="/home" replace />} />
+
       {/* Public Routes */}
       <Route path="/home" element={<HomePage />} />
       <Route path="/cart" element={<CartPage />} />
@@ -58,8 +62,8 @@ export default function RouterComponent() {
         />
       </Route>
 
-      {/* Catch-all Route */}
-      <Route path="*" element={<Navigate to="/home" replace />} />
+      {/* Catch-all 404 Page */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
