@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useTermsAndConditionsStore } from "../store/termsAndConditionsStore";
 import {
   FaCheckCircle,
@@ -10,6 +11,7 @@ import {
 } from "react-icons/fa";
 
 export default function TermsAndConditionsGate({ children }) {
+  const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
   const [expandedSections, setExpandedSections] = useState({});
@@ -17,8 +19,18 @@ export default function TermsAndConditionsGate({ children }) {
   const { fetchTermsAndConditions, termsAndConditions, isLoading, error } =
     useTermsAndConditionsStore();
 
+  const isBypassedRoute =
+    location.pathname.startsWith("/admin") ||
+    location.pathname === "/terms" ||
+    location.pathname === "/privacy";
+
   // Check acceptance status on component mount
   useEffect(() => {
+    if (isBypassedRoute) {
+      setIsModalOpen(false);
+      return;
+    }
+
     const hasAcceptedTerms = sessionStorage.getItem("hasAcceptedTerms");
     if (hasAcceptedTerms !== "true") {
       fetchTermsAndConditions();
@@ -34,7 +46,7 @@ export default function TermsAndConditionsGate({ children }) {
         setReadTimeEstimate(`${minutes}-${minutes + 1} minutes`);
       }
     }
-  }, [fetchTermsAndConditions, termsAndConditions.length]);
+  }, [fetchTermsAndConditions, termsAndConditions.length, isBypassedRoute]);
 
   const handleScroll = (e) => {
     const { scrollTop, scrollHeight, clientHeight } = e.target;
