@@ -9,6 +9,7 @@ export default function Cart() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [tableCode, setTableCode] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const navigate = useNavigate();
   const { cart, setCart, removeItemFromCart } = useCartStore();
 
@@ -54,18 +55,23 @@ export default function Cart() {
   };
 
   const formatCurrency = (amount) => {
-    return amount.toLocaleString("id-ID", {
+    return (amount || 0).toLocaleString("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
     });
   };
 
-  const handleCheckout = async () => {
-    if (!customerName || !customerEmail || !tableCode) {
-      toast.error("Please fill out all customer details before checkout");
+  const handleOpenConfirmation = () => {
+    if (!customerName.trim() || !customerEmail.trim() || !tableCode.trim()) {
+      toast.error("Mohon lengkapi semua data pelanggan & nomor meja sebelum checkout!");
       return;
     }
+    setShowConfirmModal(true);
+  };
+
+  const handleExecuteCheckout = async () => {
+    setShowConfirmModal(false);
 
     const transactionData = {
       table_code: tableCode,
@@ -82,17 +88,19 @@ export default function Cart() {
     try {
       const response = await createTransaction();
       if (!response || !response.redirect_url) {
-        toast.error("Transaction failed, please try again.");
+        toast.error("Transaksi gagal dibuat. Silakan coba lagi.");
         return;
       }
 
-      toast.success("Transaction created successfully!");
+      toast.success("Transaksi berhasil dibuat! Mengalihkan ke pembayaran...");
       setCart([]);
       sessionStorage.removeItem("cart");
-      window.open(response.redirect_url, "_blank");
+
+      // Direct redirection to avoid mobile pop-up blockers
+      window.location.href = response.redirect_url;
     } catch (error) {
-      console.log(error);
-      toast.error("Failed to create transaction!");
+      console.error("Checkout error:", error);
+      toast.error("Gagal membuat transaksi!");
     }
   };
 
@@ -299,9 +307,9 @@ export default function Cart() {
                 </div>
               </div>
               <button
-                onClick={handleCheckout}
+                onClick={handleOpenConfirmation}
                 disabled={isLoading}
-                className={`w-full mt-6 py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors ${
+                className={`w-full mt-6 py-3.5 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-bold shadow-md transition-all active:scale-[0.99] ${
                   isLoading ? "opacity-75 cursor-not-allowed" : ""
                 }`}
               >
@@ -327,15 +335,66 @@ export default function Cart() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Processing...
+                    Memproses Pesanan...
                   </div>
                 ) : (
-                  "Complete Order"
+                  "Lanjut ke Pembayaran"
                 )}
               </button>
               {error && (
                 <p className="mt-3 text-sm text-red-600 text-center">{error}</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Final Order Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 transform transition-all">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Konfirmasi Pesanan
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Pastikan rincian nomor meja dan pesanan Anda sudah sesuai sebelum melanjutkan pembayaran.
+            </p>
+
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2 mb-6 border border-gray-200 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Nomor Meja:</span>
+                <span className="font-bold text-gray-900">Meja #{tableCode}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Nama Pelanggan:</span>
+                <span className="font-semibold text-gray-900">{customerName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Email:</span>
+                <span className="font-semibold text-gray-900 truncate max-w-[200px]" title={customerEmail}>
+                  {customerEmail}
+                </span>
+              </div>
+              <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-base">
+                <span className="text-gray-900">Total Tagihan:</span>
+                <span className="text-blue-600">{formatCurrency(calculateTotal())}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleExecuteCheckout}
+                disabled={isLoading}
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-md transition"
+              >
+                {isLoading ? "Memproses..." : "Bayar Sekarang"}
+              </button>
             </div>
           </div>
         </div>

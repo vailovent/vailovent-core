@@ -9,9 +9,7 @@ exports.getAllProducts = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    const filter = { stock: 1 };
-
-    const allProducts = await Products.find(filter).skip(skip).limit(limit);
+    const allProducts = await Products.find({}).skip(skip).limit(limit);
 
     const totalProducts = await Products.countDocuments();
 
@@ -22,6 +20,8 @@ exports.getAllProducts = async (req, res) => {
         data: null,
       });
     }
+
+    res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=120");
 
     res.status(200).json({
       success: true,

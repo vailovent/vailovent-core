@@ -17,7 +17,14 @@ export default function ProductCard({ product }) {
   const { addItemToCart } = useCartStore();
   const [quantity, setQuantity] = useState(1);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("vailovent_favorites") || "[]");
+      return Array.isArray(saved) && saved.includes(product._id);
+    } catch {
+      return false;
+    }
+  });
   const [isHovered, setIsHovered] = useState(false);
 
   const isOutOfStock = product.stock <= 0;
@@ -43,7 +50,7 @@ export default function ProductCard({ product }) {
           <p className="font-semibold text-sm">{product.name}</p>
           <p className="text-xs text-gray-600">
             {quantity}x added to cart •{" "}
-            {product.price.toLocaleString("id-ID", {
+            {((product.price || 0) * quantity).toLocaleString("id-ID", {
               style: "currency",
               currency: "IDR",
               minimumFractionDigits: 0,
@@ -69,18 +76,30 @@ export default function ProductCard({ product }) {
 
   const toggleFavorite = (e) => {
     e.stopPropagation();
-    setIsFavorite(!isFavorite);
+    const newFavoriteState = !isFavorite;
+    setIsFavorite(newFavoriteState);
+
+    try {
+      const saved = JSON.parse(localStorage.getItem("vailovent_favorites") || "[]");
+      const updated = newFavoriteState
+        ? Array.from(new Set([...saved, product._id]))
+        : saved.filter((id) => id !== product._id);
+      localStorage.setItem("vailovent_favorites", JSON.stringify(updated));
+    } catch (err) {
+      console.error("Failed to save favorite in localStorage:", err);
+    }
+
     toast.info(
       <div className="flex items-center">
-        {isFavorite ? (
+        {newFavoriteState ? (
           <>
-            <FaRegHeart className="text-pink-500 mr-2" />
-            <span>Removed from favorites</span>
+            <FaHeart className="text-pink-500 mr-2" />
+            <span>Ditambahkan ke favorit</span>
           </>
         ) : (
           <>
-            <FaHeart className="text-pink-500 mr-2" />
-            <span>Added to favorites</span>
+            <FaRegHeart className="text-pink-500 mr-2" />
+            <span>Dihapus dari favorit</span>
           </>
         )}
       </div>,
