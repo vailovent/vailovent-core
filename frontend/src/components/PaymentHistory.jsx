@@ -730,40 +730,64 @@ export default function PaymentHistory({ status }) {
                     <span>Status Memasak Pesanan (Dapur)</span>
                   </h4>
                   <p className="text-xs text-gray-600 mt-0.5">
-                    Perbarui tahap memasak agar pelanggan dapat memantau secara live
+                    {selectedTransaction.status !== "completed"
+                      ? "Status memasak baru dapat diatur setelah pembayaran lunas"
+                      : "Alur proses bergerak maju ke depan & tidak dapat dikembalikan ke tahap sebelumnya"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <div className="flex items-center bg-white border border-gray-300 rounded-xl px-3 py-2 shadow-sm w-full sm:w-auto">
-                    {getCookingStatusIcon(
+                  {(() => {
+                    const COOKING_STAGES_RANK = {
+                      "Not Started": 0,
+                      "Being Cooked": 1,
+                      "Ready to Serve": 2,
+                      "Completed": 3,
+                    };
+                    const currentStatus =
                       cookingStatus[selectedTransaction._id] ||
-                        selectedTransaction.cooking_status ||
-                        "Not Started"
-                    )}
-                    <select
-                      className="text-xs sm:text-sm font-bold text-gray-900 bg-transparent focus:outline-none cursor-pointer w-full"
-                      value={
-                        cookingStatus[selectedTransaction._id] ||
-                        selectedTransaction.cooking_status ||
-                        "Not Started"
-                      }
-                      onChange={(e) =>
-                        handleCookingStatusChange(
-                          selectedTransaction._id,
-                          e.target.value
-                        )
-                      }
-                      disabled={
-                        selectedTransaction.status !== "completed" ||
-                        isUpdating
-                      }
-                    >
-                      <option value="Not Started">Pesanan Diterima (Not Started)</option>
-                      <option value="Being Cooked">Sedang Dimasak (Being Cooked)</option>
-                      <option value="Ready to Serve">Siap Disajikan (Ready to Serve)</option>
-                      <option value="Completed">Pesanan Selesai (Completed)</option>
-                    </select>
-                  </div>
+                      selectedTransaction.cooking_status ||
+                      "Not Started";
+                    const currentRank = COOKING_STAGES_RANK[currentStatus] ?? 0;
+                    const isFullyCompleted = currentStatus === "Completed";
+
+                    return (
+                      <div className="flex items-center bg-white border border-gray-300 rounded-xl px-3 py-2 shadow-sm w-full sm:w-auto">
+                        {getCookingStatusIcon(currentStatus)}
+                        <select
+                          className={`text-xs sm:text-sm font-bold bg-transparent focus:outline-none w-full ${
+                            isFullyCompleted || selectedTransaction.status !== "completed" || isUpdating
+                              ? "text-gray-500 cursor-not-allowed"
+                              : "text-gray-900 cursor-pointer"
+                          }`}
+                          value={currentStatus}
+                          onChange={(e) =>
+                            handleCookingStatusChange(
+                              selectedTransaction._id,
+                              e.target.value
+                            )
+                          }
+                          disabled={
+                            selectedTransaction.status !== "completed" ||
+                            isFullyCompleted ||
+                            isUpdating
+                          }
+                        >
+                          <option value="Not Started" disabled={currentRank > 0}>
+                            1. Pesanan Diterima (Not Started)
+                          </option>
+                          <option value="Being Cooked" disabled={currentRank > 1}>
+                            2. Sedang Dimasak (Being Cooked)
+                          </option>
+                          <option value="Ready to Serve" disabled={currentRank > 2}>
+                            3. Siap Disajikan (Ready to Serve)
+                          </option>
+                          <option value="Completed" disabled={currentRank > 3}>
+                            4. Pesanan Selesai (Completed)
+                          </option>
+                        </select>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 

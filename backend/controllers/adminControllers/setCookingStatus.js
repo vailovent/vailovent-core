@@ -28,19 +28,20 @@ exports.setCookingStatus = async (req, res) => {
       });
     }
 
-    // Validate cooking_status value
-    const validCookingStatus = [
-      "Not Started",
-      "Being Cooked",
-      "Ready to Serve",
-      "Completed",
-    ];
-    if (!validCookingStatus.includes(cooking_status)) {
+    // Validate cooking_status value & pipeline progression
+    const COOKING_STAGES_RANK = {
+      "Not Started": 0,
+      "Being Cooked": 1,
+      "Ready to Serve": 2,
+      "Completed": 3,
+    };
+
+    if (!(cooking_status in COOKING_STAGES_RANK)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid cooking status: "${cooking_status}". Allowed values: ${validCookingStatus.join(
-          ", "
-        )}`,
+        message: `Status memasak tidak valid: "${cooking_status}". Pilihan valid: ${Object.keys(
+          COOKING_STAGES_RANK
+        ).join(", ")}`,
         data: null,
       });
     }
@@ -52,7 +53,7 @@ exports.setCookingStatus = async (req, res) => {
     if (!existingTransaction) {
       return res.status(404).json({
         success: false,
-        message: "Transaction not found!",
+        message: "Transaksi tidak ditemukan!",
         data: null,
       });
     }
@@ -61,7 +62,29 @@ exports.setCookingStatus = async (req, res) => {
     if (existingTransaction.status !== "completed") {
       return res.status(400).json({
         success: false,
-        message: `Cannot update cooking status because the transaction status is "${existingTransaction.status}"!`,
+        message: `Tidak dapat mengubah status memasak karena status pembayaran transaksi adalah "${existingTransaction.status}"!`,
+        data: null,
+      });
+    }
+
+    // Business Process Algorithm: Forward-only progression check
+    const currentStatus = existingTransaction.cooking_status || "Not Started";
+    const currentRank = COOKING_STAGES_RANK[currentStatus] ?? 0;
+    const newRank = COOKING_STAGES_RANK[cooking_status];
+
+    if (currentStatus === "Completed") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Pesanan telah berstatus Selesai (Completed) dan tidak dapat diubah lagi!",
+        data: null,
+      });
+    }
+
+    if (newRank <= currentRank) {
+      return res.status(400).json({
+        success: false,
+        message: `Transisi status tidak valid! Status saat ini (${currentStatus}) tidak dapat dikembalikan ke tahap sebelumnya atau sama (${cooking_status}).`,
         data: null,
       });
     }
