@@ -8,23 +8,10 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-# dist
+# Ignore build
+dist
 dist-ssr
 *.local
 
 .env
-.gitignore
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Ignore frontend
-frontend/
+frontend/.env
