@@ -4,11 +4,8 @@ const TransactionItems = require("../../models/transactionItemSchema");
 const EmailLogs = require("../../models/emailLogSchema");
 
 const {
-  sendFailedEmail,
-} = require("../../middlewares/sendMail/sendFailedEmail");
-const {
-  sendSuccessEmail,
-} = require("../../middlewares/sendMail/sendSuccessEmail");
+  handleTransactionEmailNotification,
+} = require("../../utils/transactionEmailHelper");
 
 const statusMapping = {
   1: "pending",
@@ -57,47 +54,19 @@ exports.paying = async (req, res) => {
       });
     }
 
-    existingTransaction.status = statusMapping[statusNumber];
+    const newStatus = statusMapping[statusNumber];
+    existingTransaction.status = newStatus;
     const result = await existingTransaction.save();
 
     const items = await TransactionItems.find({ transaction_id });
 
-    // Kirim email hanya jika transaksi sukses atau gagal
-    let emailPayload = null;
-    if (statusNumber === 3) {
-      emailPayload = "Success Transaction";
-    } else if ([4, 5, 6].includes(statusNumber)) {
-      emailPayload = "Fail Transaction";
-    }
-
-    if (emailPayload) {
-      const emailExists = await EmailLogs.findOne({
-        transaction_id,
-        payload: emailPayload,
-      });
-
-      if (!emailExists) {
-        // Kirim email & simpan log secara paralel
-        Promise.all([
-          emailPayload === "Success Transaction"
-            ? sendSuccessEmail(
-                existingTransaction.customer_email,
-                existingTransaction,
-                items
-              )
-            : sendFailedEmail(
-                existingTransaction.customer_email,
-                existingTransaction,
-                items
-              ),
-          new EmailLogs({
-            transaction_id,
-            customer_email: existingTransaction.customer_email,
-            payload: emailPayload,
-          }).save(),
-        ]).catch((err) => console.error("Email sending/logging failed:", err));
-      }
-    }
+    // Kirim notifikasi email via shared helper
+    await handleTransactionEmailNotification(
+      transaction_id,
+      newStatus,
+      existingTransaction,
+      items
+    );
 
     return res.status(200).json({
       success: true,

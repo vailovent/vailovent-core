@@ -2,6 +2,7 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const CORS = require("cors");
+const mongoose = require("mongoose");
 const { connectToDB } = require("./db/connectToDB");
 const productRoute = require("./routes/productRoute");
 const transactionRoute = require("./routes/transactionRoute");
@@ -32,7 +33,18 @@ app.use("/api/v1/midtrans", midtransRoute);
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/admin", adminRoute);
 
-// Test route
+// Health check endpoint for uptime monitoring & observability
+app.get("/health", (req, res) => {
+  const isDbConnected = mongoose.connection.readyState === 1;
+  res.status(isDbConnected ? 200 : 503).json({
+    status: isDbConnected ? "ok" : "degraded",
+    uptime: Math.floor(process.uptime()),
+    database: isDbConnected ? "connected" : "disconnected",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Test root route
 app.get("/", (req, res) => {
   res.json({
     message: "Vailovent API is running",

@@ -86,37 +86,43 @@ exports.createTransactionMidtrans = async (req, res) => {
   try {
     const transaction = await snap.createTransaction(parameter);
 
-    const validateEmail = await EmailLogs.findOne({
+    // Kirim email pembayaran jika belum pernah dikirim
+    const existingEmailLog = await EmailLogs.findOne({
       transaction_id,
       payload: "Create Transaction",
     });
-    if (validateEmail) {
-      return;
+
+    if (!existingEmailLog) {
+      try {
+        await sendPaymentEmail(
+          customer_email,
+          customer_name,
+          transaction_id,
+          grossAmount,
+          itemDetails,
+          transaction.redirect_url
+        );
+
+        const newEmailLog = new EmailLogs({
+          transaction_id,
+          customer_email,
+          payload: "Create Transaction",
+        });
+        await newEmailLog.save();
+      } catch (mailError) {
+        console.error("Warning: Failed to send payment email:", mailError.message);
+      }
     }
 
-    const send_email = await sendPaymentEmail(
-      customer_email,
-      customer_name,
-      transaction_id,
-      grossAmount,
-      itemDetails,
-      transaction.redirect_url
-    );
-
-    const newEmaillog = new EmailLogs({
-      transaction_id,
-      customer_email,
-      payload: "Create Transaction",
-    });
-    await newEmaillog.save();
-
     return res.status(200).json({
+      success: true,
       redirect_url: transaction.redirect_url,
     });
   } catch (error) {
-    console.error("Error creating transaction:", error);
-    return res.status(500).send({
-      error: "Terjadi kesalahan saat membuat transaksi",
+    console.error("Error creating transaction in Midtrans:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Terjadi kesalahan saat memproses transaksi pembayaran.",
     });
   }
 };
