@@ -114,8 +114,10 @@ export const useTransactionStore = create((set, get) => ({
 
   clearTransactions: () => set({ transactions: [] }),
 
-  fetchAllTransactionByStatus: async (status) => {
-    set({ isLoading: true, error: null });
+  fetchAllTransactionByStatus: async (status, isSilent = false) => {
+    if (!isSilent) {
+      set({ isLoading: true, error: null });
+    }
 
     try {
       if (!status) {
@@ -146,8 +148,11 @@ export const useTransactionStore = create((set, get) => ({
         error.response?.data?.message ||
         error.message ||
         "Error fetching transactions";
-      toast.error(errorMessage);
-      set({ error: errorMessage, isLoading: false });
+      if (!isSilent) {
+        toast.error(errorMessage);
+        set({ error: errorMessage, isLoading: false });
+      }
+      return null;
     }
   },
 

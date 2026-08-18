@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useTransactionStore } from "../store/transactionStore";
 import { useAdminStore } from "../store/adminStore";
 import { toast } from "react-toastify";
@@ -19,6 +19,45 @@ import {
   FiRefreshCw,
 } from "react-icons/fi";
 import { FaFireAlt, FaUtensils, FaCheckDouble } from "react-icons/fa";
+
+// Audio Synthesizer Chime for incoming order alerts (Web Audio API)
+const playOrderChime = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+
+    // First Tone (E5 - 659.25Hz)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(659.25, now);
+    osc1.frequency.exponentialRampToValueAtTime(783.99, now + 0.15); // G5
+    gain1.gain.setValueAtTime(0.3, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.5);
+
+    // Second Harmonics (C6 - 1046.5Hz)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "triangle";
+    osc2.frequency.setValueAtTime(1046.5, now + 0.12);
+    gain2.gain.setValueAtTime(0.2, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.6);
+  } catch (e) {
+    console.warn("Audio chime playback error:", e);
+  }
+};
 
 export default function PaymentHistory({ status }) {
   const {
@@ -41,6 +80,7 @@ export default function PaymentHistory({ status }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [syncingId, setSyncingId] = useState(null);
   const [isSyncingAll, setIsSyncingAll] = useState(false);
+  const [isAutoSyncEnabled, setIsAutoSyncEnabled] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
   const [sortConfig, setSortConfig] = useState({
@@ -48,12 +88,15 @@ export default function PaymentHistory({ status }) {
     direction: "descending",
   });
 
+  const knownTransactionIdsRef = useRef(new Set());
+  const isInitialLoadRef = useRef(true);
+
   const handleSyncStatus = async (transactionId, e) => {
     if (e) e.stopPropagation();
     try {
       setSyncingId(transactionId);
       await syncTransactionStatus(transactionId);
-      await fetchAllTransactionByStatus(status);
+      await fetchAllTransactionByStatus(status, false);
     } catch (err) {
       console.error("Sync error:", err);
     } finally {
@@ -65,7 +108,7 @@ export default function PaymentHistory({ status }) {
     try {
       setIsSyncingAll(true);
       await syncAllPendingTransactions();
-      await fetchAllTransactionByStatus(status);
+      await fetchAllTransactionByStatus(status, false);
     } catch (err) {
       console.error("Sync all error:", err);
     } finally {
@@ -79,21 +122,90 @@ export default function PaymentHistory({ status }) {
     return map;
   }, {});
 
-  // Fetch transactions
-  const fetchTransactions = useCallback(async () => {
-    if (!status) return;
-    try {
-      await fetchAllTransactionByStatus(status);
-    } catch (err) {
-      toast.error(err.message);
-    }
-  }, [status, fetchAllTransactionByStatus]);
+  // Fetch transactions with silent background option & diff detection
+  const fetchTransactions = useCallback(
+    async (isSilent = false) => {
+      if (!status) return;
+      try {
+        const result = await fetchAllTransactionByStatus(status, isSilent);
+        if (result && result.data && Array.isArray(result.data.transactions)) {
+          const incoming = result.data.transactions;
+          const currentKnown = knownTransactionIdsRef.current;
 
+          if (!isInitialLoadRef.current && isSilent) {
+            // Find newly arrived transactions
+            const newOrders = incoming.filter((t) => !currentKnown.has(t._id));
+            if (newOrders.length > 0) {
+              playOrderChime();
+              newOrders.forEach((newTx) => {
+                toast.info(
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shrink-0">
+                      🔔
+                    </div>
+                    <div>
+                      <p className="font-bold text-xs sm:text-sm text-gray-900">
+                        Pesanan Baru Diterima!
+                      </p>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        Meja {newTx.table_code || "-"} &bull; {newTx.customer_name}
+                      </p>
+                    </div>
+                  </div>,
+                  { autoClose: 6000 }
+                );
+              });
+            }
+          }
+
+          // Update known IDs
+          knownTransactionIdsRef.current = new Set(incoming.map((t) => t._id));
+          if (isInitialLoadRef.current) {
+            isInitialLoadRef.current = false;
+          }
+        }
+      } catch (err) {
+        if (!isSilent) {
+          toast.error(err.message);
+        }
+      }
+    },
+    [status, fetchAllTransactionByStatus]
+  );
+
+  // Initial load on status change
   useEffect(() => {
     clearTransactions();
+    knownTransactionIdsRef.current = new Set();
+    isInitialLoadRef.current = true;
     setCurrentPage(1);
-    fetchTransactions();
+    fetchTransactions(false);
   }, [status, fetchTransactions, clearTransactions]);
+
+  // Real-Time Background Auto-Sync Interval (8 Seconds) + Page Visibility API
+  useEffect(() => {
+    if (!isAutoSyncEnabled || !status) return;
+
+    const intervalId = setInterval(() => {
+      // Pause polling if tab is currently hidden
+      if (!document.hidden) {
+        fetchTransactions(true);
+      }
+    }, 8000);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchTransactions(true);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isAutoSyncEnabled, status, fetchTransactions]);
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
@@ -258,6 +370,33 @@ export default function PaymentHistory({ status }) {
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          {/* Live Sync Status Toggle Pill */}
+          <button
+            onClick={() => setIsAutoSyncEnabled(!isAutoSyncEnabled)}
+            className={`flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold border transition shadow-sm ${
+              isAutoSyncEnabled
+                ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
+                : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+            }`}
+            title={
+              isAutoSyncEnabled
+                ? "Live Sync Aktif: Data baru otomatis diperbarui tiap 8 detik tanpa reload"
+                : "Live Sync Dijeda: Klik untuk mengaktifkan kembali"
+            }
+          >
+            <span className="relative flex h-2.5 w-2.5">
+              {isAutoSyncEnabled && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              )}
+              <span
+                className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                  isAutoSyncEnabled ? "bg-emerald-500" : "bg-gray-400"
+                }`}
+              ></span>
+            </span>
+            <span>{isAutoSyncEnabled ? "Live Sync (8s)" : "Sync Dijeda"}</span>
+          </button>
+
           {status === "pending" && (
             <button
               onClick={handleSyncAllPending}
