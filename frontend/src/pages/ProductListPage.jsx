@@ -3,6 +3,7 @@ import { useProductStore } from "../store/productStore";
 import ProductForm from "../components/CrudProductForm";
 import AdminNav from "../components/AdminNav";
 import Pagination from "../components/Pagination";
+import ConfirmModal from "../components/ConfirmModal";
 import { formatCurrency } from "../utils/FormatCurrency";
 
 const ProductList = () => {
@@ -10,6 +11,7 @@ const ProductList = () => {
     useProductStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [deletingProduct, setDeletingProduct] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -24,15 +26,17 @@ const ProductList = () => {
     setIsFormOpen(true);
   };
 
-  const handleDeleteClick = async (productId) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this product?"
-    );
-    if (!confirmDelete) return;
+  const handleDeleteClick = (product) => {
+    setDeletingProduct(product);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deletingProduct) return;
     try {
       setIsDeleting(true);
-      await deleteProduct(productId);
+      await deleteProduct(deletingProduct._id);
+      setDeletingProduct(null);
+      fetchProductsAdmin();
     } catch (error) {
       console.error("Delete error:", error);
     } finally {
@@ -252,7 +256,7 @@ const ProductList = () => {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteClick(product._id)}
+                      onClick={() => handleDeleteClick(product)}
                       disabled={isDeleting}
                       className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 font-semibold rounded-lg transition"
                     >
@@ -377,7 +381,7 @@ const ProductList = () => {
                           </svg>
                         </button>
                         <button
-                          onClick={() => handleDeleteClick(product._id)}
+                          onClick={() => handleDeleteClick(product)}
                           className="text-red-600 hover:text-red-900 transition-colors p-1 rounded-md hover:bg-red-50"
                           aria-label={`Delete ${product.name}`}
                           title="Delete"
@@ -430,6 +434,19 @@ const ProductList = () => {
         </div>
       )}
       </div>
+
+      {/* Custom Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deletingProduct}
+        onClose={() => setDeletingProduct(null)}
+        onConfirm={handleConfirmDelete}
+        title="Hapus Menu Makanan/Minuman?"
+        message={`Apakah Anda yakin ingin menghapus "${deletingProduct?.name || "produk ini"}" secara permanen dari katalog restoran?`}
+        confirmText="Hapus Menu"
+        cancelText="Batal"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

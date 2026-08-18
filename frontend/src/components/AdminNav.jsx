@@ -1,25 +1,33 @@
-﻿import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FaClipboardList, FaUtensils, FaSignOutAlt, FaUserShield } from "react-icons/fa";
 import { useAuthStore } from "../store/authStore";
+import ConfirmModal from "./ConfirmModal";
 
 export default function AdminNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signout } = useAuthStore();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const isTransactions = location.pathname.startsWith("/admin/transaction");
   const isProducts = location.pathname.startsWith("/admin/products");
 
-  const handleLogout = async () => {
-    const confirmLogout = window.confirm("Apakah Anda yakin ingin keluar dari panel admin?");
-    if (confirmLogout) {
+  const handleConfirmLogout = async () => {
+    try {
+      setIsLoggingOut(true);
       await signout();
+      setIsLogoutModalOpen(false);
       navigate("/admin/signin");
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
+    <>
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Brand & Badge */}
@@ -66,7 +74,7 @@ export default function AdminNav() {
 
           {/* Logout Button */}
           <button
-            onClick={handleLogout}
+            onClick={() => setIsLogoutModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition"
             title="Keluar dari sesi admin"
           >
@@ -76,5 +84,19 @@ export default function AdminNav() {
         </div>
       </div>
     </div>
+
+    {/* Custom Logout Confirmation Modal */}
+    <ConfirmModal
+      isOpen={isLogoutModalOpen}
+      onClose={() => setIsLogoutModalOpen(false)}
+      onConfirm={handleConfirmLogout}
+      title="Keluar dari Panel Admin?"
+      message="Anda akan keluar dari sesi manajemen restoran. Anda dapat login kembali kapan saja menggunakan akun admin Anda."
+      confirmText="Ya, Logout"
+      cancelText="Batal"
+      variant="warning"
+      isLoading={isLoggingOut}
+    />
+  </>
   );
 }

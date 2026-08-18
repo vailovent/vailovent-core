@@ -195,7 +195,7 @@ export default function HomePage() {
 
         {/* Error State */}
         {error && (
-          <div className="p-6 text-center max-w-md mx-auto bg-red-50 rounded-2xl border border-red-200 text-red-700 my-8">
+          <div className="p-6 text-center max-w-md mx-auto bg-red-50 rounded-2xl border border-red-200 text-red-700 my-8" role="alert" aria-live="assertive">
             <p className="font-semibold">Gagal memuat menu</p>
             <p className="text-xs mt-1 text-red-500">{error}</p>
             <button

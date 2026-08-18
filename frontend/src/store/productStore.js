@@ -44,13 +44,13 @@ export const useProductStore = create((set, get) => ({
         isLoading: false,
       }));
 
-      toast.success(response?.data?.message || "Product created successfully!");
+      toast.success(response?.data?.message || "Produk berhasil ditambahkan!");
       return newProduct;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
-        "Failed to create product!";
+        "Gagal menambahkan produk!";
       toast.error(errorMessage);
       set({ error: errorMessage, isLoading: false });
       throw error;
@@ -99,16 +99,16 @@ export const useProductStore = create((set, get) => ({
         isLoading: false,
       }));
 
-      toast.success(response?.data?.message || "Product updated successfully!");
+      toast.success(response?.data?.message || "Produk berhasil diperbarui!");
       return updatedProduct;
     } catch (error) {
-      let errorMessage = "Failed to update product!";
+      let errorMessage = "Gagal memperbarui produk!";
 
       if (error.response) {
         errorMessage =
           error.response.data?.message ||
           (error.response.status === 413
-            ? "Image too large (max 10MB)"
+            ? "Ukuran file gambar terlalu besar (maksimal 10MB)"
             : error.message);
       }
 
@@ -134,12 +134,12 @@ export const useProductStore = create((set, get) => ({
         successMessage: response?.data?.message,
       });
 
-      toast.success(response?.data?.message);
+      toast.success(response?.data?.message || "Produk berhasil dihapus!");
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
-        "Failed to delete product!";
+        "Gagal menghapus produk!";
       toast.error(errorMessage);
       set({ error: errorMessage, isLoading: false });
       throw error;

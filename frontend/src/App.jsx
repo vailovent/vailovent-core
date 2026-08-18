@@ -14,7 +14,8 @@ export default function App() {
       <div className="min-h-screen flex flex-col bg-gray-100">
         <ToastContainer
           position="top-center"
-          autoClose={5000}
+          autoClose={3000}
+          limit={3}
           hideProgressBar={false}
           newestOnTop={false}
           closeOnClick

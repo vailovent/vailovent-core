@@ -115,9 +115,9 @@ export default function PaymentHistory({ status }) {
     try {
       setCookingStatus((prev) => ({ ...prev, [transactionId]: newStatus }));
       await updateTransactionCookingStatus(transactionId, newStatus);
-      toast.success("Status updated successfully!");
+      toast.success("Status memasak berhasil diperbarui!");
     } catch (error) {
-      toast.error("Failed to update status!");
+      toast.error("Gagal memperbarui status memasak!");
       setCookingStatus((prev) => ({
         ...prev,
         [transactionId]: prev[transactionId],
@@ -256,7 +256,7 @@ export default function PaymentHistory({ status }) {
       )}
 
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-xl" role="alert" aria-live="assertive">
           <div className="flex">
             <div className="flex-shrink-0">
               <FiFrown className="h-5 w-5 text-red-500" />

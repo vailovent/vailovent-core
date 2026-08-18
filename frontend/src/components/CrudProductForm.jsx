@@ -43,13 +43,13 @@ const ProductForm = ({ existingProduct, onSuccess, onCancel }) => {
     // Validate file type
     const validTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!validTypes.includes(file.type)) {
-      toast.error("Only JPEG, PNG, or WEBP images are allowed!");
+      toast.error("Format gambar harus berupa JPEG, PNG, atau WEBP!");
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size must be less than 5MB!");
+      toast.error("Ukuran file gambar maksimal 5MB!");
       return;
     }
 
@@ -68,7 +68,7 @@ const ProductForm = ({ existingProduct, onSuccess, onCancel }) => {
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      toast.error("Failed to process image!");
+      toast.error("Gagal memproses file gambar!");
       setIsUploading(false);
     }
   };
@@ -79,19 +79,19 @@ const ProductForm = ({ existingProduct, onSuccess, onCancel }) => {
     const errors = {};
 
     if (!formData.name.trim()) {
-      errors.name = "Product name is required";
+      errors.name = "Nama produk wajib diisi";
     } else if (formData.name.trim().length > 100) {
-      errors.name = "Name must be less than 100 characters";
+      errors.name = "Nama produk maksimal 100 karakter";
     }
 
     if (!formData.description.trim()) {
-      errors.description = "Description is required";
+      errors.description = "Deskripsi produk wajib diisi";
     } else if (formData.description.trim().length > 500) {
-      errors.description = "Description must be less than 500 characters";
+      errors.description = "Deskripsi produk maksimal 500 karakter";
     }
 
     if (isNaN(formData.stock) || Number(formData.stock) < 0) {
-      errors.stock = "Stock must be a positive number";
+      errors.stock = "Jumlah stok harus berupa angka valid (minimal 0)";
     }
 
     if (
@@ -99,14 +99,14 @@ const ProductForm = ({ existingProduct, onSuccess, onCancel }) => {
       isNaN(formData.price) ||
       Number(formData.price) < 0
     ) {
-      errors.price = "Valid price is required";
+      errors.price = "Harga produk wajib diisi dengan angka valid";
     } else if (Number(formData.price) > 100000000) {
-      errors.price = "Price must be less than 100,000,000";
+      errors.price = "Harga produk maksimal Rp 100.000.000";
     }
 
     // Validasi gambar berbeda untuk create dan update
     if (!existingProduct && !(formData.image instanceof File)) {
-      errors.image = "Product image is required";
+      errors.image = "Foto produk wajib diunggah";
     }
 
     setFormErrors(errors);
@@ -117,7 +117,7 @@ const ProductForm = ({ existingProduct, onSuccess, onCancel }) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please correct the highlighted errors");
+      toast.error("Mohon periksa dan lengkapi kolom yang ditandai merah");
       return;
     }
 

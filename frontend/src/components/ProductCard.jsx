@@ -35,7 +35,7 @@ export default function ProductCard({ product }) {
       return;
     }
     if (quantity <= 0) {
-      toast.error("Please select at least 1 item to add to cart");
+      toast.error("Pilih minimal 1 porsi menu untuk ditambahkan ke keranjang");
       return;
     }
     addItemToCart({ ...product, quantity });
@@ -49,7 +49,7 @@ export default function ProductCard({ product }) {
         <div>
           <p className="font-semibold text-sm">{product.name}</p>
           <p className="text-xs text-gray-600">
-            {quantity}x added to cart •{" "}
+            {quantity}x ditambahkan ke keranjang •{" "}
             {((product.price || 0) * quantity).toLocaleString("id-ID", {
               style: "currency",
               currency: "IDR",
