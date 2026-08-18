@@ -7,24 +7,15 @@ const {
   findProductByImage,
 } = require("../../utils/FindProduct");
 const { uploadToS3 } = require("../../controllers/awsS3Controllers/setUp");
+const { deleteFromS3 } = require("../../utils/deleteFromS3");
 
 exports.createProduct = async (req, res) => {
-  try {
-    console.log("[DEBUG] Request received:", {
-      body: req.body,
-      file: req.file
-        ? {
-            originalname: req.file.originalname,
-            mimetype: req.file.mimetype,
-            size: req.file.size,
-          }
-        : null,
-      headers: req.headers,
-    });
+  let uploadedImageUrl = null;
 
+  try {
     const { name, description, stock, price } = req.body;
 
-    // Validate input data
+    // 1. Validasi input data
     const { error } = createProductValidator.validate({
       name,
       description,
@@ -34,30 +25,23 @@ exports.createProduct = async (req, res) => {
 
     if (error) {
       const errorMessages = error.details.map((detail) => detail.message);
-      console.error("[DEBUG] Validation errors:", errorMessages);
       return res.status(400).json({
         success: false,
         message: errorMessages,
       });
     }
 
+    // 2. Validasi file gambar ada
     if (!req.file) {
-      console.error("[DEBUG] No file uploaded");
       return res.status(400).json({
         success: false,
         message: "Image file is required!",
       });
     }
 
-    console.log("[DEBUG] Uploading file to S3...");
-    const imageUrl = await uploadToS3(req.file);
-    console.log("[DEBUG] File uploaded to:", imageUrl);
-
-    // Check for duplicate product name
-    console.log("[DEBUG] Checking for duplicate product name...");
+    // 3. CEK DUPLIKASI NAMA PRODUK SEBELUM UPLOAD KE S3 (mencegah S3 leak)
     const existingProductByName = await findProductByName(name);
     if (existingProductByName) {
-      console.error("[DEBUG] Duplicate product found:", existingProductByName);
       return res.status(400).json({
         success: false,
         message: "Product already exists!",
@@ -65,11 +49,15 @@ exports.createProduct = async (req, res) => {
       });
     }
 
-    // Check for duplicate image
-    console.log("[DEBUG] Checking for duplicate image...");
-    const existingProductByImage = await findProductByImage(imageUrl);
+    // 4. Upload ke S3 setelah semua validasi lolos
+    uploadedImageUrl = await uploadToS3(req.file);
+
+    // 5. Cek duplikasi URL gambar jika ada
+    const existingProductByImage = await findProductByImage(uploadedImageUrl);
     if (existingProductByImage) {
-      console.error("[DEBUG] Duplicate image found:", existingProductByImage);
+      await deleteFromS3(uploadedImageUrl).catch((err) =>
+        console.error("Failed to delete S3 image on duplicate:", err)
+      );
       return res.status(400).json({
         success: false,
         message: "Product image already exists!",
@@ -77,18 +65,16 @@ exports.createProduct = async (req, res) => {
       });
     }
 
-    // Create new product
-    console.log("[DEBUG] Creating new product document...");
+    // 6. Buat dokumen produk baru di MongoDB
     const product = new Products({
       name,
       description,
       stock: Number(stock),
       price: Number(price),
-      image: imageUrl,
+      image: uploadedImageUrl,
     });
 
     const result = await product.save();
-    console.log("[DEBUG] Product created successfully:", result);
 
     return res.status(201).json({
       success: true,
@@ -96,17 +82,15 @@ exports.createProduct = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("[DEBUG] Error in createProduct:", {
-      message: error.message,
-      stack: error.stack,
-      ...(error.response && {
-        response: {
-          status: error.response.status,
-          data: error.response.data,
-        },
-      }),
-    });
-    res.status(500).json({
+    // Jika upload berhasil tapi proses penyimpanan DB gagal, bersihkan file dari S3
+    if (uploadedImageUrl) {
+      await deleteFromS3(uploadedImageUrl).catch((err) =>
+        console.error("Failed to clean up S3 file after error:", err)
+      );
+    }
+
+    console.error("Error in createProduct:", error);
+    return res.status(500).json({
       success: false,
       message: error.message || "An internal server error occurred!",
       data: null,
