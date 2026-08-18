@@ -150,4 +150,24 @@ export const useTransactionStore = create((set, get) => ({
       set({ error: errorMessage, isLoading: false });
     }
   },
+
+  syncTransactionStatus: async (transaction_id) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/${transaction_id}/sync-status`,
+        {},
+        { withCredentials: true }
+      );
+      if (response.data && response.data.success) {
+        toast.success(response.data.message || "Status berhasil disinkronkan!");
+        return response.data;
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "Gagal menyinkronkan status dengan Midtrans";
+      toast.error(errorMessage);
+      throw error;
+    }
+  },
 }));

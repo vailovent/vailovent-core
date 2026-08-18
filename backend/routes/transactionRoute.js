@@ -10,6 +10,7 @@ const {
   getAllTransactionByStatus,
   getTransactionBySuccessAndIsRead,
   getLatestCompletedAndIsReadTrueTransaction,
+  syncTransactionStatus,
 } = require("../controllers/transactionController/getTransactionController");
 const {
   updateTransactionIsRead,
@@ -26,6 +27,9 @@ router.post("/create", transactionLimiter, createTransaction);
 
 // Manual status update dilindungi verifyToken + isAdmin (hanya admin yang berhak ubah status manual)
 router.put("/:transaction_id/payment/:status", verifyToken, isAdmin, paying);
+
+// Sinkronisasi status transaksi langsung dengan Midtrans API (On-Demand Reconcile)
+router.post("/:transaction_id/sync-status", verifyToken, isAdmin, syncTransactionStatus);
 
 router.get("/id/:transaction_id", getById);
 

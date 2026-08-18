@@ -59,6 +59,15 @@ exports.getAllTransactionByStatus = async (req, res) => {
   }
 
   try {
+    // Auto-expire transaksi pending yang sudah berusia lebih dari 24 jam (86.400.000 ms)
+    if (status === "pending") {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      await Transactions.updateMany(
+        { status: "pending", createdAt: { $lt: twentyFourHoursAgo } },
+        { $set: { status: "expired" } }
+      );
+    }
+
     // Get transactions with the specified status, sorted by creation date
     const transactions = await Transactions.find({ status }).sort({
       createdAt: -1,
@@ -233,6 +242,89 @@ exports.getLatestCompletedAndIsReadTrueTransaction = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "An internal server error occurred!",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Sinkronisasi status transaksi langsung dengan server Midtrans API
+ */
+exports.syncTransactionStatus = async (req, res) => {
+  const { transaction_id } = req.params;
+
+  try {
+    if (!transaction_id || !mongoose.Types.ObjectId.isValid(transaction_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid transaction ID format",
+      });
+    }
+
+    const transaction = await Transactions.findById(transaction_id);
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: "Transaction not found",
+      });
+    }
+
+    const { snap } = require("../midtransControllers/setUpMidtrans");
+    const { handleTransactionEmailNotification } = require("../../utils/transactionEmailHelper");
+
+    let midtransStatusResponse = null;
+    try {
+      midtransStatusResponse = await snap.transaction.status(`VAILOVENT-${transaction_id}`);
+    } catch (midtransErr) {
+      console.warn("Midtrans status lookup message:", midtransErr.message);
+    }
+
+    if (!midtransStatusResponse) {
+      // Jika order tidak terdaftar di Midtrans dan sudah lewat 1 jam, tandai expired
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      if (transaction.createdAt < oneHourAgo && transaction.status === "pending") {
+        transaction.status = "expired";
+        await transaction.save();
+      }
+      return res.status(200).json({
+        success: true,
+        message: "Order Midtrans tidak ditemukan. Status transaksi telah disesuaikan jika kedaluwarsa.",
+        data: transaction,
+      });
+    }
+
+    const rawStatus = midtransStatusResponse.transaction_status;
+    let newStatus = transaction.status;
+
+    if (rawStatus === "settlement" || rawStatus === "capture") {
+      newStatus = "completed";
+    } else if (rawStatus === "expire") {
+      newStatus = "expired";
+    } else if (rawStatus === "cancel" || rawStatus === "refund") {
+      newStatus = "cancelled";
+    } else if (rawStatus === "deny") {
+      newStatus = "denied";
+    } else if (rawStatus === "pending") {
+      newStatus = "pending";
+    }
+
+    transaction.status = newStatus;
+    await transaction.save();
+
+    const items = await TransactionItems.find({ transaction_id });
+    await handleTransactionEmailNotification(transaction_id, newStatus, transaction, items);
+
+    return res.status(200).json({
+      success: true,
+      message: `Status berhasil disinkronkan dengan Midtrans: ${newStatus}`,
+      data: transaction,
+      midtransStatus: rawStatus,
+    });
+  } catch (error) {
+    console.error("Error in syncTransactionStatus:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Gagal menyinkronkan status dengan Midtrans",
       error: error.message,
     });
   }

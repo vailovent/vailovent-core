@@ -15,12 +15,14 @@ import {
   FiHash,
   FiCalendar,
   FiAlertTriangle,
+  FiRefreshCw,
 } from "react-icons/fi";
 import { FaFireAlt, FaUtensils, FaCheckDouble } from "react-icons/fa";
 
 export default function PaymentHistory({ status }) {
   const {
     fetchAllTransactionByStatus,
+    syncTransactionStatus,
     transactions = [],
     transactionItems = [],
     productDetails = [],
@@ -35,10 +37,24 @@ export default function PaymentHistory({ status }) {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [cookingStatus, setCookingStatus] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [syncingId, setSyncingId] = useState(null);
   const [sortConfig, setSortConfig] = useState({
     key: "createdAt",
     direction: "descending",
   });
+
+  const handleSyncStatus = async (transactionId, e) => {
+    if (e) e.stopPropagation();
+    try {
+      setSyncingId(transactionId);
+      await syncTransactionStatus(transactionId);
+      await fetchAllTransactionByStatus(status);
+    } catch (err) {
+      console.error("Sync error:", err);
+    } finally {
+      setSyncingId(null);
+    }
+  };
 
   // Create a map of product details for easy lookup
   const productsMap = productDetails.reduce((map, product) => {
@@ -372,8 +388,25 @@ export default function PaymentHistory({ status }) {
                     </p>
                   </div>
                   <div className="col-span-3">
-                    <div className="flex justify-between items-center">
-                      {getStatusBadge(transaction.status)}
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(transaction.status)}
+                        {transaction.status === "pending" && (
+                          <button
+                            onClick={(e) => handleSyncStatus(transaction._id, e)}
+                            disabled={syncingId === transaction._id}
+                            className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition text-xs flex items-center gap-1 border border-blue-200"
+                            title="Periksa dan sinkronkan status dengan Midtrans API"
+                          >
+                            <FiRefreshCw
+                              className={`text-xs ${
+                                syncingId === transaction._id ? "animate-spin" : ""
+                              }`}
+                            />
+                            <span className="hidden xl:inline text-[11px] font-semibold">Cek Midtrans</span>
+                          </button>
+                        )}
+                      </div>
                       <button
                         onClick={() =>
                           setSelectedTransaction(
@@ -382,7 +415,7 @@ export default function PaymentHistory({ status }) {
                               : transaction._id
                           )
                         }
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium whitespace-nowrap"
                       >
                         {selectedTransaction === transaction._id
                           ? "Hide Details"
@@ -466,10 +499,24 @@ export default function PaymentHistory({ status }) {
                             </div>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Payment:</span>{" "}
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-600">Payment:</span>
                               {getStatusBadge(transaction.status)}
-                            </p>
+                              {transaction.status === "pending" && (
+                                <button
+                                  onClick={(e) => handleSyncStatus(transaction._id, e)}
+                                  disabled={syncingId === transaction._id}
+                                  className="ml-2 px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold flex items-center gap-1 border border-blue-200"
+                                >
+                                  <FiRefreshCw
+                                    className={`text-xs ${
+                                      syncingId === transaction._id ? "animate-spin" : ""
+                                    }`}
+                                  />
+                                  <span>Cek Status Midtrans</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
