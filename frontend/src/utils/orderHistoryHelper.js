@@ -1,4 +1,4 @@
-﻿const STORAGE_KEY = "vailovent_customer_orders";
+const STORAGE_KEY = "vailovent_customer_orders";
 
 /**
  * Mendapatkan seluruh riwayat pesanan pelanggan dari localStorage
@@ -69,8 +69,30 @@ export const getActiveCustomerOrder = () => {
       const orderTime = new Date(order.createdAt).getTime();
       const isRecent = orderTime > oneDayAgo;
       const isCookingIncomplete = order.cooking_status !== "Completed";
-      const isNotExpired = order.status !== "expired" && order.status !== "cancelled" && order.status !== "failed";
+      const isNotExpired =
+        order.status !== "expired" &&
+        order.status !== "cancelled" &&
+        order.status !== "failed";
       return isRecent && isCookingIncomplete && isNotExpired;
     }) || null
   );
+};
+
+/**
+ * Menghitung jumlah pesanan aktif yang sedang diproses (belum Selesai / Completed)
+ */
+export const getActiveCustomerOrdersCount = () => {
+  const orders = getCustomerOrders();
+  const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+
+  return orders.filter((order) => {
+    const orderTime = new Date(order.createdAt).getTime();
+    const isRecent = orderTime > oneDayAgo;
+    const isCookingIncomplete = order.cooking_status !== "Completed";
+    const isNotExpired =
+      order.status !== "expired" &&
+      order.status !== "cancelled" &&
+      order.status !== "failed";
+    return isRecent && isCookingIncomplete && isNotExpired;
+  }).length;
 };

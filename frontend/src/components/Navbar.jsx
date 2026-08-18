@@ -3,20 +3,20 @@ import { Link } from "react-router-dom";
 import { FaShoppingCart, FaHome, FaBars, FaTimes, FaReceipt } from "react-icons/fa";
 import { useCartStore } from "../store/cartStore";
 import MyOrdersModal from "./MyOrdersModal";
-import { getCustomerOrders } from "../utils/orderHistoryHelper";
+import { getActiveCustomerOrdersCount } from "../utils/orderHistoryHelper";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
-  const [orderCount, setOrderCount] = useState(0);
+  const [activeOrderCount, setActiveOrderCount] = useState(0);
   const { cart } = useCartStore();
 
-  // Read customer order count
+  // Read only active in-progress customer orders count (excluding Completed/Expired)
   useEffect(() => {
     const updateCount = () => {
-      const orders = getCustomerOrders();
-      setOrderCount(orders.length);
+      const activeCount = getActiveCustomerOrdersCount();
+      setActiveOrderCount(activeCount);
     };
     updateCount();
     window.addEventListener("storage", updateCount);
@@ -95,9 +95,9 @@ export default function Navbar() {
             >
               <FaReceipt className="text-base text-amber-400" />
               <span>Pesanan Saya</span>
-              {orderCount > 0 && (
+              {activeOrderCount > 0 && (
                 <span className="bg-amber-500 text-gray-900 text-[10px] font-black rounded-full h-4 min-w-4 px-1 flex items-center justify-center shadow">
-                  {orderCount}
+                  {activeOrderCount}
                 </span>
               )}
             </button>
@@ -188,9 +188,9 @@ export default function Navbar() {
               </div>
               <span>Pesanan Saya</span>
             </div>
-            {orderCount > 0 && (
+            {activeOrderCount > 0 && (
               <span className="bg-amber-500 text-gray-900 text-xs font-black rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center shadow">
-                {orderCount}
+                {activeOrderCount}
               </span>
             )}
           </button>
