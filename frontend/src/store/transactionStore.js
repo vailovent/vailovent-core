@@ -170,4 +170,24 @@ export const useTransactionStore = create((set, get) => ({
       throw error;
     }
   },
+
+  syncAllPendingTransactions: async () => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/sync-all-pending`,
+        {},
+        { withCredentials: true }
+      );
+      if (response.data && response.data.success) {
+        toast.success(response.data.message || "Semua transaksi pending berhasil disinkronkan!");
+        return response.data;
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        "Gagal menyinkronkan seluruh transaksi pending";
+      toast.error(errorMessage);
+      throw error;
+    }
+  },
 }));

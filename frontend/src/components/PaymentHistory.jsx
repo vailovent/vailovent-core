@@ -24,6 +24,7 @@ export default function PaymentHistory({ status }) {
   const {
     fetchAllTransactionByStatus,
     syncTransactionStatus,
+    syncAllPendingTransactions,
     transactions = [],
     transactionItems = [],
     productDetails = [],
@@ -39,6 +40,7 @@ export default function PaymentHistory({ status }) {
   const [cookingStatus, setCookingStatus] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [syncingId, setSyncingId] = useState(null);
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
   const [sortConfig, setSortConfig] = useState({
@@ -56,6 +58,18 @@ export default function PaymentHistory({ status }) {
       console.error("Sync error:", err);
     } finally {
       setSyncingId(null);
+    }
+  };
+
+  const handleSyncAllPending = async () => {
+    try {
+      setIsSyncingAll(true);
+      await syncAllPendingTransactions();
+      await fetchAllTransactionByStatus(status);
+    } catch (err) {
+      console.error("Sync all error:", err);
+    } finally {
+      setIsSyncingAll(false);
     }
   };
 
@@ -233,18 +247,38 @@ export default function PaymentHistory({ status }) {
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Transaction Management
-        </h1>
-        <div className="w-full md:w-64">
-          <input
-            type="text"
-            placeholder="Search transactions..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={searchQuery}
-            onChange={handleSearchChange}
-          />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+            Daftar Transaksi {status ? `(${status.toUpperCase()})` : ""}
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+            Kelola dan pantau status pembayaran serta proses memasak pesanan
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          {status === "pending" && (
+            <button
+              onClick={handleSyncAllPending}
+              disabled={isSyncingAll || isLoading}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-blue-500/20 active:scale-95 transition disabled:opacity-50 whitespace-nowrap"
+              title="Periksa dan sinkronkan semua transaksi pending dengan Midtrans"
+            >
+              <FiRefreshCw className={`text-sm ${isSyncingAll ? "animate-spin" : ""}`} />
+              <span>{isSyncingAll ? "Menyinkronkan..." : "Sinkronkan Semua Data Pending"}</span>
+            </button>
+          )}
+
+          <div className="w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Cari transaksi / pemesan..."
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
+          </div>
         </div>
       </div>
 
@@ -427,181 +461,24 @@ export default function PaymentHistory({ status }) {
                         )}
                       </div>
                       <button
-                        onClick={() =>
-                          setSelectedTransaction(
-                            selectedTransaction === transaction._id
-                              ? null
-                              : transaction._id
-                          )
-                        }
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium whitespace-nowrap"
+                        onClick={() => setSelectedTransaction(transaction)}
+                        className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-semibold whitespace-nowrap px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
                       >
-                        {selectedTransaction === transaction._id
-                          ? "Hide Details"
-                          : "View Details"}
+                        Lihat Detail
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Expanded Details */}
-                {selectedTransaction === transaction._id && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                      {/* Customer Info */}
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-3">
-                          Customer Information
-                        </h3>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm text-gray-500">Name</p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {transaction.customer_name}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500">Email</p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {transaction.customer_email}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500">
-                                Table Code
-                              </p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {transaction.table_code}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500">Order ID</p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {transaction.order_id || "-"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Status Management */}
-                        <div className="mt-4 bg-gray-50 p-4 rounded-lg">
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">
-                            Status Management
-                          </h4>
-                          <div className="mb-3">
-                            <label className="block text-sm text-gray-500 mb-1">
-                              Cooking Status
-                            </label>
-                            <div className="flex items-center">
-                              {getCookingStatusIcon(
-                                cookingStatus[transaction._id] ||
-                                  transaction.cooking_status ||
-                                  "Not Started"
-                              )}
-                              <select
-                                className="text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded px-2 py-1"
-                                value={
-                                  cookingStatus[transaction._id] ||
-                                  transaction.cooking_status ||
-                                  "Not Started"
-                                }
-                                onChange={(e) =>
-                                  handleCookingStatusChange(
-                                    transaction._id,
-                                    e.target.value
-                                  )
-                                }
-                                disabled={
-                                  transaction.status !== "completed" ||
-                                  isUpdating
-                                }
-                              >
-                                <option value="Not Started">Not Started</option>
-                                <option value="Being Cooked">
-                                  Being Cooked
-                                </option>
-                                <option value="Ready to Serve">
-                                  Ready to Serve
-                                </option>
-                                <option value="Completed">Completed</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Order Items */}
-                      <div className="md:col-span-2">
-                        <h3 className="text-lg font-medium text-gray-900 mb-3">
-                          Order Items
-                        </h3>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Item
-                                </th>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Quantity
-                                </th>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Price
-                                </th>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Subtotal
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                              {transactionItems
-                                .filter(
-                                  (item) =>
-                                    item.transaction_id === transaction._id
-                                )
-                                .map((item) => {
-                                  const product = productsMap[item.product_id];
-                                  return (
-                                    <tr key={item._id}>
-                                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {item.product_name || product?.name || "Unknown Product"}
-                                      </td>
-                                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {item.qty || 0}
-                                      </td>
-                                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {formatCurrency(item.unit_price || product?.price || 0)}
-                                      </td>
-                                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {formatCurrency(
-                                          item.amount ||
-                                            (item.unit_price || product?.price || 0) * (item.qty || 0)
-                                        )}
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                            </tbody>
-                            <tfoot>
-                              <tr>
-                                <td
-                                  colSpan="3"
-                                  className="px-4 sm:px-6 py-4 text-right text-sm font-medium text-gray-500"
-                                >
-                                  Total:
-                                </td>
-                                <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                                  {formatCurrency(transaction.total_amount)}
-                                </td>
-                              </tr>
-                            </tfoot>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Mobile View Detail Button */}
+                <div className="md:hidden flex justify-end pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => setSelectedTransaction(transaction)}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+                  >
+                    Lihat Detail Pesanan &rarr;
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -615,6 +492,224 @@ export default function PaymentHistory({ status }) {
               pageSize={PAGE_SIZE}
               onPageChange={setCurrentPage}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Floating Transaction Details Modal */}
+      {selectedTransaction && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="transaction-detail-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedTransaction(null);
+          }}
+        >
+          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col border border-gray-100 transform transition-all animate-scaleUp overflow-hidden my-auto">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-gray-900 via-gray-850 to-gray-900 p-5 sm:p-6 text-white flex items-center justify-between border-b border-gray-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black shadow-inner">
+                  <FiShoppingBag className="text-lg" />
+                </div>
+                <div>
+                  <h3 id="transaction-detail-title" className="text-base sm:text-lg font-bold">
+                    Detail Transaksi & Pesanan
+                  </h3>
+                  <p className="text-xs text-gray-400 font-mono mt-0.5">
+                    ID: {selectedTransaction._id}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedTransaction(null)}
+                className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-800 transition"
+                aria-label="Tutup detail modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body (Scrollable) */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-6">
+              {/* Customer & Order Metadata Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 space-y-2.5">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Informasi Pelanggan
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <FiUser className="text-blue-600 text-sm shrink-0" />
+                    <span className="text-sm font-bold text-gray-900 truncate">
+                      {selectedTransaction.customer_name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FiMail className="text-blue-600 text-sm shrink-0" />
+                    <span className="text-xs text-gray-600 truncate">
+                      {selectedTransaction.customer_email}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-gray-500">Nomor Meja:</span>
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md text-xs font-black">
+                      Meja {selectedTransaction.table_code}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 space-y-2.5">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Status & Pembayaran
+                  </h4>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Status Bayar:</span>
+                    <div>{getStatusBadge(selectedTransaction.status)}</div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Waktu Order:</span>
+                    <span className="text-xs font-medium text-gray-800">
+                      {formatDate(selectedTransaction.createdAt)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Order ID:</span>
+                    <span className="text-xs font-mono text-gray-700 truncate max-w-[150px]">
+                      {selectedTransaction.order_id || "-"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cooking Status Control */}
+              <div className="bg-blue-50/60 p-4 sm:p-5 rounded-2xl border border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <FaUtensils className="text-blue-600" />
+                    <span>Status Memasak Pesanan (Dapur)</span>
+                  </h4>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Perbarui tahap memasak agar pelanggan dapat memantau secara live
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex items-center bg-white border border-gray-300 rounded-xl px-3 py-2 shadow-sm w-full sm:w-auto">
+                    {getCookingStatusIcon(
+                      cookingStatus[selectedTransaction._id] ||
+                        selectedTransaction.cooking_status ||
+                        "Not Started"
+                    )}
+                    <select
+                      className="text-xs sm:text-sm font-bold text-gray-900 bg-transparent focus:outline-none cursor-pointer w-full"
+                      value={
+                        cookingStatus[selectedTransaction._id] ||
+                        selectedTransaction.cooking_status ||
+                        "Not Started"
+                      }
+                      onChange={(e) =>
+                        handleCookingStatusChange(
+                          selectedTransaction._id,
+                          e.target.value
+                        )
+                      }
+                      disabled={
+                        selectedTransaction.status !== "completed" ||
+                        isUpdating
+                      }
+                    >
+                      <option value="Not Started">Pesanan Diterima (Not Started)</option>
+                      <option value="Being Cooked">Sedang Dimasak (Being Cooked)</option>
+                      <option value="Ready to Serve">Siap Disajikan (Ready to Serve)</option>
+                      <option value="Completed">Pesanan Selesai (Completed)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Items Table */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <FiShoppingBag className="text-blue-600" />
+                  <span>Daftar Menu yang Dipesan</span>
+                </h4>
+                <div className="overflow-x-auto rounded-2xl border border-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                      <tr>
+                        <th className="px-4 py-3 text-left">Menu</th>
+                        <th className="px-4 py-3 text-center">Jumlah</th>
+                        <th className="px-4 py-3 text-right">Harga Satuan</th>
+                        <th className="px-4 py-3 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {transactionItems
+                        .filter(
+                          (item) =>
+                            item.transaction_id === selectedTransaction._id
+                        )
+                        .map((item) => {
+                          const product = productsMap[item.product_id];
+                          return (
+                            <tr key={item._id} className="hover:bg-gray-50/80 transition">
+                              <td className="px-4 py-3.5 whitespace-nowrap text-xs sm:text-sm font-bold text-gray-900">
+                                {item.product_name || product?.name || "Unknown Product"}
+                              </td>
+                              <td className="px-4 py-3.5 whitespace-nowrap text-xs sm:text-sm text-center font-semibold text-gray-700">
+                                {item.qty || 0}x
+                              </td>
+                              <td className="px-4 py-3.5 whitespace-nowrap text-xs sm:text-sm text-right text-gray-600">
+                                {formatCurrency(item.unit_price || product?.price || 0)}
+                              </td>
+                              <td className="px-4 py-3.5 whitespace-nowrap text-xs sm:text-sm text-right font-bold text-gray-900">
+                                {formatCurrency(
+                                  item.amount ||
+                                    (item.unit_price || product?.price || 0) * (item.qty || 0)
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                    <tfoot className="bg-gray-50/80 font-bold">
+                      <tr>
+                        <td colSpan="3" className="px-4 py-3.5 text-right text-sm text-gray-700">
+                          Total Pembayaran:
+                        </td>
+                        <td className="px-4 py-3.5 text-right text-base text-blue-700 font-extrabold">
+                          {formatCurrency(selectedTransaction.total_amount)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 px-5 py-4 sm:px-6 border-t border-gray-100 flex items-center justify-between gap-3">
+              <div>
+                {selectedTransaction.status === "pending" && (
+                  <button
+                    onClick={(e) => handleSyncStatus(selectedTransaction._id, e)}
+                    disabled={syncingId === selectedTransaction._id}
+                    className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl flex items-center gap-1.5 border border-blue-200 transition"
+                  >
+                    <FiRefreshCw className={`text-xs ${syncingId === selectedTransaction._id ? "animate-spin" : ""}`} />
+                    <span>Cek Status Midtrans</span>
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTransaction(null)}
+                className="px-5 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs sm:text-sm font-bold shadow-md transition active:scale-95"
+              >
+                Tutup Detail
+              </button>
+            </div>
           </div>
         </div>
       )}

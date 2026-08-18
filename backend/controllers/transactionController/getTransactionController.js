@@ -329,3 +329,85 @@ exports.syncTransactionStatus = async (req, res) => {
     });
   }
 };
+
+/**
+ * Sinkronisasi SEMUA transaksi berstatus 'pending' sekaligus dengan Midtrans API
+ */
+exports.syncAllPendingTransactions = async (req, res) => {
+  try {
+    const pendingTransactions = await Transactions.find({ status: "pending" });
+    if (!pendingTransactions || pendingTransactions.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Tidak ada transaksi pending yang perlu disinkronkan.",
+        data: { totalChecked: 0, updatedCount: 0 },
+      });
+    }
+
+    const { snap } = require("../midtransControllers/setUpMidtrans");
+    const { handleTransactionEmailNotification } = require("../../utils/transactionEmailHelper");
+
+    let updatedCount = 0;
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    for (const transaction of pendingTransactions) {
+      let midtransStatusResponse = null;
+      try {
+        midtransStatusResponse = await snap.transaction.status(`VAILOVENT-${transaction._id}`);
+      } catch (midtransErr) {
+        // Order not found on Midtrans
+      }
+
+      if (!midtransStatusResponse) {
+        if (transaction.createdAt < oneHourAgo) {
+          transaction.status = "expired";
+          await transaction.save();
+          updatedCount++;
+        }
+        continue;
+      }
+
+      const rawStatus = midtransStatusResponse.transaction_status;
+      let newStatus = transaction.status;
+
+      if (rawStatus === "settlement" || rawStatus === "capture") {
+        newStatus = "completed";
+      } else if (rawStatus === "expire") {
+        newStatus = "expired";
+      } else if (rawStatus === "cancel" || rawStatus === "refund") {
+        newStatus = "cancelled";
+      } else if (rawStatus === "deny") {
+        newStatus = "denied";
+      }
+
+      if (newStatus !== transaction.status) {
+        transaction.status = newStatus;
+        await transaction.save();
+        updatedCount++;
+
+        try {
+          const items = await TransactionItems.find({ transaction_id: transaction._id });
+          await handleTransactionEmailNotification(transaction._id, newStatus, transaction, items);
+        } catch (emailErr) {
+          console.error("Email notification error in batch sync:", emailErr.message);
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Berhasil memeriksa ${pendingTransactions.length} transaksi pending. ${updatedCount} status diperbarui.`,
+      data: {
+        totalChecked: pendingTransactions.length,
+        updatedCount,
+      },
+    });
+  } catch (error) {
+    console.error("Error in syncAllPendingTransactions:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Gagal menyinkronkan seluruh transaksi pending",
+      error: error.message,
+    });
+  }
+};
