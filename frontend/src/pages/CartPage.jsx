@@ -182,34 +182,35 @@ export default function Cart() {
                       </div>
                       <button
                         onClick={() => handleRemoveItem(index)}
-                        className="text-gray-400 hover:text-red-500 transition-colors"
+                        className="p-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors shrink-0"
                         aria-label="Remove item"
+                        title="Hapus menu"
                       >
-                        <FaTrash />
+                        <FaTrash className="text-sm" />
                       </button>
                     </div>
 
                     <div className="mt-4 flex items-center justify-between">
-                      <div className="flex items-center border border-gray-300 rounded-lg">
+                      <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden bg-gray-50 h-11">
                         <button
                           onClick={() => handleDecrement(index)}
-                          className="px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                          className="w-10 h-full flex items-center justify-center text-gray-600 hover:bg-gray-200 active:bg-gray-300 active:scale-95 transition-colors"
                           aria-label="Decrease quantity"
                         >
-                          <FaMinus size={14} />
+                          <FaMinus size={12} />
                         </button>
-                        <span className="px-4 py-1 text-lg font-medium w-12 text-center">
+                        <span className="w-10 h-full flex items-center justify-center text-base font-bold bg-white border-x border-gray-200">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => handleIncrement(index)}
-                          className="px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                          className="w-10 h-full flex items-center justify-center text-gray-600 hover:bg-gray-200 active:bg-gray-300 active:scale-95 transition-colors"
                           aria-label="Increase quantity"
                         >
-                          <FaPlus size={14} />
+                          <FaPlus size={12} />
                         </button>
                       </div>
-                      <p className="text-lg font-semibold text-gray-800">
+                      <p className="text-base sm:text-lg font-black text-gray-900">
                         {formatCurrency(item.price * item.quantity)}
                       </p>
                     </div>
@@ -221,39 +222,39 @@ export default function Cart() {
 
           {/* Customer Details & Checkout */}
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
-                Customer Details
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 mb-4 pb-2 border-b border-gray-100">
+                Informasi Pemesan
               </h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
+                    Nama Lengkap
                   </label>
                   <input
                     type="text"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      !customerName ? "border-red-500" : "border-gray-300"
+                    className={`w-full px-4 py-3 border rounded-xl text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                      !customerName ? "border-red-400 bg-red-50/20" : "border-gray-300 bg-white"
                     }`}
-                    placeholder="Your full name"
+                    placeholder="Masukkan nama lengkap Anda"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
+                    Alamat Email (untuk bukti invoice)
                   </label>
                   <input
                     type="email"
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      !customerEmail ? "border-red-500" : "border-gray-300"
+                    className={`w-full px-4 py-3 border rounded-xl text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                      !customerEmail ? "border-red-400 bg-red-50/20" : "border-gray-300 bg-white"
                     }`}
-                    placeholder="your.email@example.com"
+                    placeholder="email.anda@example.com"
                     required
                   />
                 </div>

@@ -147,46 +147,43 @@ export default function ProductCard({ product }) {
 
         {/* Out of Stock Overlay Badge */}
         {isOutOfStock && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="bg-red-600 text-white font-bold px-3 py-1.5 rounded-full text-xs uppercase tracking-wider shadow-md">
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span className="bg-red-600 text-white font-extrabold px-3.5 py-1.5 rounded-full text-xs uppercase tracking-wider shadow-lg">
               Stok Habis
             </span>
           </div>
         )}
 
-        {/* Interactive overlay */}
-        {isHovered && !isOutOfStock && (
-          <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center transition-opacity duration-300">
-            <button
-              className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
-              onClick={toggleFavorite}
-              aria-label={
-                isFavorite ? "Remove from favorites" : "Add to favorites"
-              }
-            >
-              {isFavorite ? (
-                <FaHeart className="text-pink-500" />
-              ) : (
-                <FaRegHeart className="text-gray-600 hover:text-pink-500" />
-              )}
-            </button>
-          </div>
+        {/* Always Accessible Favorite Button (Optimized for Mobile & Desktop) */}
+        {!isOutOfStock && (
+          <button
+            className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-md hover:bg-white active:scale-90 transition-all"
+            onClick={toggleFavorite}
+            aria-label={
+              isFavorite ? "Hapus dari favorit" : "Tambah ke favorit"
+            }
+          >
+            {isFavorite ? (
+              <FaHeart className="text-pink-500 text-base" />
+            ) : (
+              <FaRegHeart className="text-gray-600 hover:text-pink-500 text-base" />
+            )}
+          </button>
         )}
-
       </div>
 
       {/* Product Content */}
       <div className="p-4 md:p-5 flex flex-col flex-grow">
         {/* Product Name */}
         <h2
-          className="text-lg md:text-xl font-bold text-gray-800 line-clamp-2 mb-2"
+          className="text-base sm:text-lg md:text-xl font-bold text-gray-800 line-clamp-2 mb-1.5"
           title={product.name}
         >
           {product.name}
         </h2>
 
         {/* Price */}
-        <p className="text-xl font-bold text-green-600 mb-3">
+        <p className="text-lg sm:text-xl font-extrabold text-green-600 mb-2.5">
           {formatPrice(product.price)}
         </p>
 
@@ -211,26 +208,26 @@ export default function ProductCard({ product }) {
         {/* Expandable Description */}
         <div className="mb-4">
           <p
-            className={`text-gray-600 text-sm ${
-              isDescriptionExpanded ? "" : "line-clamp-3"
-            } transition-all duration-300`}
+            className={`text-gray-600 text-xs sm:text-sm ${
+              isDescriptionExpanded ? "" : "line-clamp-2 sm:line-clamp-3"
+            } transition-all duration-300 leading-relaxed`}
           >
             {product.description}
           </p>
-          {product.description && product.description.length > 80 && (
+          {product.description && product.description.length > 70 && (
             <button
               onClick={toggleDescription}
-              className="text-blue-500 hover:text-blue-700 text-sm font-medium mt-1 flex items-center transition-colors"
+              className="text-blue-600 hover:text-blue-700 text-xs font-semibold mt-1 flex items-center gap-1"
             >
               {isDescriptionExpanded ? (
                 <>
-                  <span>Show Less</span>
-                  <FaChevronUp className="ml-1" size={12} />
+                  <span>Tutup</span>
+                  <FaChevronUp size={10} />
                 </>
               ) : (
                 <>
-                  <span>Read More</span>
-                  <FaChevronDown className="ml-1" size={12} />
+                  <span>Selengkapnya</span>
+                  <FaChevronDown size={10} />
                 </>
               )}
             </button>
@@ -239,31 +236,31 @@ export default function ProductCard({ product }) {
 
         {/* Quantity Controls and Add to Cart */}
         <div className="mt-auto pt-3 border-t border-gray-100">
-          <div className="flex items-stretch gap-2">
-            {/* Quantity Selector */}
+          <div className="flex items-center gap-2">
+            {/* Quantity Selector with enlarged touch targets */}
             <div
-              className={`flex items-center border border-gray-200 rounded-lg ${
-                isOutOfStock ? "bg-gray-100 opacity-50" : "bg-gray-50"
-              } flex-1 max-w-[120px]`}
+              className={`flex items-center border border-gray-300 rounded-xl overflow-hidden ${
+                isOutOfStock ? "bg-gray-100 opacity-50" : "bg-gray-50 shadow-inner"
+              } h-11`}
             >
               <button
                 onClick={decrementQty}
                 disabled={isOutOfStock}
-                className="px-3 py-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors rounded-l-lg disabled:cursor-not-allowed"
-                aria-label="Decrease quantity"
+                className="w-9 h-full flex items-center justify-center text-gray-600 hover:bg-gray-200 active:bg-gray-300 active:scale-95 transition-colors disabled:cursor-not-allowed text-xs"
+                aria-label="Kurangi jumlah"
               >
-                <FaMinus size={12} />
+                <FaMinus />
               </button>
-              <span className="px-2 py-1 text-base font-medium w-8 text-center bg-white">
+              <span className="w-8 text-center text-sm font-bold text-gray-800 bg-white h-full flex items-center justify-center border-x border-gray-200">
                 {isOutOfStock ? 0 : quantity}
               </span>
               <button
                 onClick={incrementQty}
                 disabled={isOutOfStock}
-                className="px-3 py-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 transition-colors rounded-r-lg disabled:cursor-not-allowed"
-                aria-label="Increase quantity"
+                className="w-9 h-full flex items-center justify-center text-gray-600 hover:bg-gray-200 active:bg-gray-300 active:scale-95 transition-colors disabled:cursor-not-allowed text-xs"
+                aria-label="Tambah jumlah"
               >
-                <FaPlus size={12} />
+                <FaPlus />
               </button>
             </div>
 
@@ -271,15 +268,15 @@ export default function ProductCard({ product }) {
             <button
               onClick={handleAddToCart}
               disabled={isOutOfStock}
-              className={`flex-1 flex items-center justify-center px-3 py-2 sm:px-4 sm:py-3 rounded-lg font-medium transition-all shadow-sm min-w-[80px] ${
+              className={`flex-1 h-11 flex items-center justify-center gap-1.5 px-3 rounded-xl font-bold transition-all shadow-sm ${
                 isOutOfStock
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:shadow-md active:scale-[0.98]"
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 active:scale-95 shadow-md shadow-blue-500/20"
               }`}
             >
-              <FaShoppingCart className="mr-1 sm:mr-2" />
-              <span className="text-sm sm:text-base whitespace-nowrap">
-                {isOutOfStock ? "Habis" : "Add"}
+              <FaShoppingCart className="text-sm" />
+              <span className="text-xs sm:text-sm whitespace-nowrap">
+                {isOutOfStock ? "Habis" : "Tambah"}
               </span>
             </button>
           </div>

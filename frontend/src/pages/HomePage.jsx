@@ -227,26 +227,39 @@ export default function HomePage() {
         )}
       </main>
 
-      {/* Floating Modern Cart Button */}
+      {/* Floating Modern Cart Bar (Optimized for Mobile Thumb Zone & Desktop) */}
       {totalQuantity > 0 && (
-        <button
-          onClick={() => navigate("/cart")}
-          className="fixed bottom-6 right-6 z-30 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white p-4 sm:px-6 sm:py-3.5 rounded-2xl shadow-2xl flex items-center gap-3.5 transition-all transform hover:scale-105 active:scale-95 border border-white/20 animate-bounce-short"
-          aria-label="Lihat keranjang pesanan"
-        >
-          <div className="relative">
-            <FaShoppingCart className="text-2xl" />
-            <span className="absolute -top-2 -right-2.5 bg-red-500 text-white text-xs font-extrabold rounded-full h-5 min-w-5 px-1 flex items-center justify-center border-2 border-indigo-900 shadow-md">
-              {totalQuantity}
-            </span>
-          </div>
-          <div className="text-left hidden sm:block">
-            <p className="text-xs text-blue-200 font-medium">Keranjang Pesanan</p>
-            <p className="text-sm font-extrabold tracking-tight">
-              {formatCurrency(totalAmount)}
-            </p>
-          </div>
-        </button>
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-30 pointer-events-none animate-fadeIn">
+          <button
+            onClick={() => navigate("/cart")}
+            className="w-full sm:w-auto pointer-events-auto bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 hover:from-blue-700 hover:to-indigo-900 text-white p-3.5 sm:px-6 sm:py-3.5 rounded-2xl shadow-2xl flex items-center justify-between sm:justify-start gap-4 transition-all transform active:scale-98 border border-white/25 backdrop-blur-md"
+            aria-label="Lihat keranjang pesanan"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+                  <FaShoppingCart className="text-xl text-white" />
+                </div>
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[11px] font-black rounded-full h-5 min-w-5 px-1 flex items-center justify-center border-2 border-blue-900 shadow-md">
+                  {totalQuantity}
+                </span>
+              </div>
+              <div className="text-left">
+                <p className="text-[11px] text-blue-200 font-medium leading-none">Keranjang Pesanan</p>
+                <p className="text-xs sm:text-sm font-extrabold tracking-tight mt-1">
+                  {totalQuantity} Menu Dipilih
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right pl-4 border-l border-white/20">
+              <p className="text-[10px] text-blue-200 uppercase tracking-wider font-bold">Total Tagihan</p>
+              <p className="text-sm sm:text-base font-black text-white">
+                {formatCurrency(totalAmount)}
+              </p>
+            </div>
+          </button>
+        </div>
       )}
     </div>
   );

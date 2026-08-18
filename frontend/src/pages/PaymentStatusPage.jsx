@@ -159,8 +159,8 @@ const PaymentStatus = () => {
                 </button>
               </div>
 
-              {/* Progress Stepper */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-2">
+              {/* Progress Stepper: Vertical Linear on Mobile, Horizontal on Desktop */}
+              <div className="flex flex-col sm:grid sm:grid-cols-4 gap-2.5 sm:gap-2">
                 {COOKING_STAGES.map((stage, idx) => {
                   const Icon = stage.icon;
                   const isCompleted = idx < currentStageIndex;
@@ -169,28 +169,37 @@ const PaymentStatus = () => {
                   return (
                     <div
                       key={stage.key}
-                      className={`flex flex-col items-center text-center p-3 rounded-lg border transition-all ${
+                      className={`flex sm:flex-col items-center gap-3 sm:gap-1 text-left sm:text-center p-3 rounded-xl border transition-all ${
                         isCurrent
-                          ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-400/30"
                           : isCompleted
-                          ? "bg-green-50 text-green-800 border-green-200"
+                          ? "bg-emerald-50 text-emerald-900 border-emerald-200"
                           : "bg-white text-gray-400 border-gray-200"
                       }`}
                     >
                       <div
-                        className={`w-9 h-9 rounded-full flex items-center justify-center mb-2 text-base ${
+                        className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-base font-bold transition-all ${
                           isCurrent
-                            ? "bg-white text-blue-600"
+                            ? "bg-white text-blue-600 shadow-sm"
                             : isCompleted
-                            ? "bg-green-600 text-white"
+                            ? "bg-emerald-600 text-white"
                             : "bg-gray-100 text-gray-400"
                         }`}
                       >
                         {isCompleted ? <FaCheck /> : <Icon />}
                       </div>
-                      <span className="text-xs font-semibold leading-tight">
-                        {stage.label}
-                      </span>
+                      <div className="flex-1 sm:flex-initial">
+                        <span className="text-xs sm:text-xs font-bold leading-tight block">
+                          {stage.label}
+                        </span>
+                        <span className="text-[10px] sm:hidden opacity-80 block mt-0.5 font-medium">
+                          {isCurrent
+                            ? "Sedang Berlangsung"
+                            : isCompleted
+                            ? "Selesai"
+                            : "Tahap Berikutnya"}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
