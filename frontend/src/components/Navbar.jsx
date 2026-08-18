@@ -1,12 +1,27 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FaShoppingCart, FaHome, FaBars, FaTimes } from "react-icons/fa";
+import { FaShoppingCart, FaHome, FaBars, FaTimes, FaReceipt } from "react-icons/fa";
 import { useCartStore } from "../store/cartStore";
+import MyOrdersModal from "./MyOrdersModal";
+import { getCustomerOrders } from "../utils/orderHistoryHelper";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+  const [orderCount, setOrderCount] = useState(0);
   const { cart } = useCartStore();
+
+  // Read customer order count
+  useEffect(() => {
+    const updateCount = () => {
+      const orders = getCustomerOrders();
+      setOrderCount(orders.length);
+    };
+    updateCount();
+    window.addEventListener("storage", updateCount);
+    return () => window.removeEventListener("storage", updateCount);
+  }, [isOrdersModalOpen]);
 
   // Prevent background scrolling when mobile menu is open
   useEffect(() => {
@@ -29,6 +44,11 @@ export default function Navbar() {
   const handleNavClick = () => {
     setMenuOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleOpenOrdersModal = () => {
+    setMenuOpen(false);
+    setIsOrdersModalOpen(true);
   };
 
   // Get the cart count
@@ -60,7 +80,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Menu */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-4 lg:space-x-6">
             <Link
               to="/home"
               className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-200 hover:text-white hover:bg-white/10 rounded-xl transition"
@@ -68,6 +88,19 @@ export default function Navbar() {
               <FaHome className="text-base" />
               <span>Beranda Menu</span>
             </Link>
+
+            <button
+              onClick={handleOpenOrdersModal}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-200 hover:text-white hover:bg-white/10 rounded-xl transition relative"
+            >
+              <FaReceipt className="text-base text-amber-400" />
+              <span>Pesanan Saya</span>
+              {orderCount > 0 && (
+                <span className="bg-amber-500 text-gray-900 text-[10px] font-black rounded-full h-4 min-w-4 px-1 flex items-center justify-center shadow">
+                  {orderCount}
+                </span>
+              )}
+            </button>
 
             <Link
               to="/cart"
@@ -145,6 +178,23 @@ export default function Navbar() {
             <span>Beranda Menu</span>
           </Link>
 
+          <button
+            onClick={handleOpenOrdersModal}
+            className="w-full flex items-center justify-between px-4 py-3.5 text-gray-200 hover:text-white hover:bg-gray-800/80 rounded-xl font-semibold transition text-left"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-lg bg-gray-800 flex items-center justify-center text-amber-400">
+                <FaReceipt className="text-base" />
+              </div>
+              <span>Pesanan Saya</span>
+            </div>
+            {orderCount > 0 && (
+              <span className="bg-amber-500 text-gray-900 text-xs font-black rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center shadow">
+                {orderCount}
+              </span>
+            )}
+          </button>
+
           <Link
             to="/cart"
             className="flex items-center justify-between px-4 py-3.5 text-gray-200 hover:text-white hover:bg-gray-800/80 rounded-xl font-semibold transition"
@@ -171,6 +221,12 @@ export default function Navbar() {
           </p>
         </div>
       </div>
+
+      {/* Floating My Orders Modal */}
+      <MyOrdersModal
+        isOpen={isOrdersModalOpen}
+        onClose={() => setIsOrdersModalOpen(false)}
+      />
     </>
   );
 }

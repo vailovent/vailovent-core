@@ -4,6 +4,7 @@ import { useTransactionStore } from "../store/transactionStore";
 import { useCartStore } from "../store/cartStore";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { saveCustomerOrder } from "../utils/orderHistoryHelper";
 
 export default function Cart() {
   const [customerName, setCustomerName] = useState("");
@@ -90,6 +91,10 @@ export default function Cart() {
       if (!response || !response.redirect_url) {
         toast.error("Transaksi gagal dibuat. Silakan coba lagi.");
         return;
+      }
+
+      if (response.savedTransaction) {
+        saveCustomerOrder(response.savedTransaction);
       }
 
       toast.success("Transaksi berhasil dibuat! Mengalihkan ke pembayaran...");

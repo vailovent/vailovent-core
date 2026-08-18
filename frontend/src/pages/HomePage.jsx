@@ -2,9 +2,20 @@ import { useEffect, useState, useMemo } from "react";
 import ProductCard from "../components/ProductCard";
 import Pagination from "../components/Pagination";
 import { useProductStore } from "../store/productStore";
-import { FaShoppingCart, FaSearch, FaTimes, FaHeart, FaUtensils, FaCheckCircle } from "react-icons/fa";
+import {
+  FaShoppingCart,
+  FaSearch,
+  FaTimes,
+  FaHeart,
+  FaUtensils,
+  FaCheckCircle,
+  FaFire,
+  FaReceipt,
+  FaArrowRight,
+} from "react-icons/fa";
 import { useCartStore } from "../store/cartStore";
 import { useNavigate } from "react-router-dom";
+import { getActiveCustomerOrder } from "../utils/orderHistoryHelper";
 
 export default function HomePage() {
   const { products, isLoading, error, fetchProducts } = useProductStore();
@@ -14,11 +25,13 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all"); // 'all', 'favorites', 'available'
   const [favorites, setFavorites] = useState([]);
+  const [activeOrder, setActiveOrder] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 8;
 
   useEffect(() => {
     fetchProducts();
+    setActiveOrder(getActiveCustomerOrder());
     try {
       const savedFavs = JSON.parse(localStorage.getItem("vailovent_favorites") || "[]");
       setFavorites(savedFavs);
@@ -141,6 +154,47 @@ export default function HomePage() {
 
       {/* Main Content & Filter Tabs */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        {/* Active Order Live Tracker Banner */}
+        {activeOrder && (
+          <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-gray-900 via-gray-850 to-blue-950 text-white shadow-lg border border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center text-lg text-white shadow-inner shrink-0">
+                <FaUtensils />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-extrabold text-sm sm:text-base">
+                    Pesanan Meja {activeOrder.table_code}
+                  </span>
+                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-md text-[11px] font-bold">
+                    {activeOrder.cooking_status === "Being Cooked"
+                      ? "🍳 Sedang Dimasak"
+                      : activeOrder.cooking_status === "Ready to Serve"
+                      ? "🍽️ Siap Disajikan"
+                      : "📋 Pesanan Diterima"}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5 font-medium">
+                  {activeOrder.order_id} &bull; Pantau live proses memasak & struk digital Anda
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() =>
+                navigate(
+                  `/payment-status?order_id=${encodeURIComponent(
+                    activeOrder.order_id
+                  )}`
+                )
+              }
+              className="w-full sm:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition flex items-center justify-center gap-2 shrink-0 active:scale-95"
+            >
+              <span>Pantau Status Live</span>
+              <FaArrowRight className="text-xs" />
+            </button>
+          </div>
+        )}
+
         {/* Filter Chips */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto scrollbar-none">

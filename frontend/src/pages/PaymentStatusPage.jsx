@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { useTransactionStore } from "../store/transactionStore";
+import { saveCustomerOrder } from "../utils/orderHistoryHelper";
 import {
   FaClock,
   FaFire,
@@ -46,6 +47,7 @@ const PaymentStatus = () => {
         const data = await fetchTransaction(transaction_id);
         if (data && data.transaction) {
           setPaymentDetails(data);
+          saveCustomerOrder(data.transaction);
         }
       } catch (error) {
         console.error("Error fetching transaction:", error);
