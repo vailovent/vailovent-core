@@ -28,9 +28,9 @@ export default function App() {
         {/* Render Public Navbar only for customer routes */}
         {!isAdminRoute && <Navbar />}
 
-        <div className="flex-grow">
+        <main className="flex-grow flex flex-col">
           <Router />
-        </div>
+        </main>
 
         {/* Render Public Footer only for customer routes */}
         {!isAdminRoute && <Footer />}
