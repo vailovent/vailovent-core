@@ -79,6 +79,8 @@ export default function PaymentHistory({ status }) {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [cookingStatus, setCookingStatus] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [syncingId, setSyncingId] = useState(null);
   const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [isAutoSyncEnabled, setIsAutoSyncEnabled] = useState(true);
@@ -306,21 +308,43 @@ export default function PaymentHistory({ status }) {
     });
   }, [transactions, sortConfig]);
 
-  // Filter transactions by search
+  // Filter transactions by search and date range (Start & End)
   const filteredTransactions = useMemo(() => {
     return sortedTransactions.filter((transaction) => {
-      const searchLower = searchQuery.toLowerCase();
-      const tableCode = transaction.table_code?.toString() || "";
+      // 1. Search Query Filter
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        const tableCode = transaction.table_code?.toString() || "";
+        const matchesSearch =
+          transaction._id?.toLowerCase().includes(searchLower) ||
+          transaction.customer_name?.toLowerCase().includes(searchLower) ||
+          transaction.customer_email?.toLowerCase().includes(searchLower) ||
+          tableCode.toLowerCase().includes(searchLower) ||
+          transaction.total_amount?.toString().includes(searchLower);
 
-      return (
-        transaction._id?.toLowerCase().includes(searchLower) ||
-        transaction.customer_name?.toLowerCase().includes(searchLower) ||
-        transaction.customer_email?.toLowerCase().includes(searchLower) ||
-        tableCode.toLowerCase().includes(searchLower) ||
-        transaction.total_amount?.toString().includes(searchLower)
-      );
+        if (!matchesSearch) return false;
+      }
+
+      // 2. Date Range Filter (Start Date & End Date)
+      if (startDate || endDate) {
+        const txDate = new Date(transaction.createdAt);
+
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          if (txDate < start) return false;
+        }
+
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (txDate > end) return false;
+        }
+      }
+
+      return true;
     });
-  }, [sortedTransactions, searchQuery]);
+  }, [sortedTransactions, searchQuery, startDate, endDate]);
 
   const totalPages = Math.ceil(filteredTransactions.length / PAGE_SIZE) || 1;
   const paginatedTransactions = useMemo(() => {
@@ -402,7 +426,7 @@ export default function PaymentHistory({ status }) {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           {/* Live Sync Status Toggle Pill */}
           <button
             onClick={() => setIsAutoSyncEnabled(!isAutoSyncEnabled)}
@@ -441,16 +465,66 @@ export default function PaymentHistory({ status }) {
               <span>{isSyncingAll ? "Menyinkronkan..." : "Sinkronkan Semua Data Pending"}</span>
             </button>
           )}
+        </div>
+      </div>
 
-          <div className="w-full sm:w-64">
+      {/* Filter & Search Controls Bar */}
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-gray-200 shadow-sm mb-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4">
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <input
+            type="text"
+            placeholder="Cari ID transaksi, nama pemesan, email, meja, atau nominal..."
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
+        </div>
+
+        {/* Date Range Picker (Start & End Date) */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 shadow-inner">
+            <FiCalendar className="text-blue-600 text-xs shrink-0" />
+            <span className="text-[11px] font-bold text-gray-500 uppercase">Dari:</span>
             <input
-              type="text"
-              placeholder="Cari transaksi / pemesan..."
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
-              value={searchQuery}
-              onChange={handleSearchChange}
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer"
             />
           </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 shadow-inner">
+            <FiCalendar className="text-blue-600 text-xs shrink-0" />
+            <span className="text-[11px] font-bold text-gray-500 uppercase">Sampai:</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer"
+            />
+          </div>
+
+          {(startDate || endDate || searchQuery) && (
+            <button
+              onClick={() => {
+                setStartDate("");
+                setEndDate("");
+                setSearchQuery("");
+                setCurrentPage(1);
+              }}
+              className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition shrink-0"
+              title="Reset semua filter pencarian dan tanggal"
+            >
+              Reset Filter
+            </button>
+          )}
         </div>
       </div>
 
