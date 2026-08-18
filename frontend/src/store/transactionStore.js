@@ -1,13 +1,10 @@
 import { create } from "zustand";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { API_ENDPOINTS } from "../config/api";
 
-const API_URL = "https://api-vailovent.vercel.app/api/v1/transactions";
-const MIDTRANS_URL =
-  "https://api-vailovent.vercel.app/api/v1/midtrans/create-transaction";
-
-// const API_URL = "http://localhost:8000/api/v1/transactions";
-// const MIDTRANS_URL = "http://localhost:8000/api/v1/midtrans/create-transaction";
+const API_URL = API_ENDPOINTS.TRANSACTIONS;
+const MIDTRANS_URL = `${API_ENDPOINTS.MIDTRANS}/create-transaction`;
 
 export const useTransactionStore = create((set, get) => ({
   table_code: "",

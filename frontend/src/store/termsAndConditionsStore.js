@@ -1,8 +1,8 @@
 import axios from "axios";
 import { create } from "zustand";
+import { API_ENDPOINTS } from "../config/api";
 
-const API_URL = "https://api-vailovent.vercel.app/api/v1/termsAndConditions";
-// const API_URL = "http://localhost:8000/api/v1/termsAndConditions";
+const API_URL = API_ENDPOINTS.TERMS_AND_CONDITIONS;
 
 export const useTermsAndConditionsStore = create((set) => ({
   termsAndConditions: [],

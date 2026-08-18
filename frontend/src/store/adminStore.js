@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import axios from "axios";
+import { API_ENDPOINTS } from "../config/api";
 
-// const API_URL = "http://localhost:8000/api/v1/admin";
-const API_URL = "https://api-vailovent.vercel.app/api/v1/admin";
+const API_URL = API_ENDPOINTS.ADMIN;
 
 export const useAdminStore = create((set) => ({
   error: null,

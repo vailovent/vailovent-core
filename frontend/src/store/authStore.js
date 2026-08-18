@@ -1,10 +1,8 @@
 import { create } from "zustand";
 import axios from "axios";
+import { API_ENDPOINTS } from "../config/api";
 
-// URL production — authStore sebelumnya salah menunjuk ke localhost
-const API_URL = "https://api-vailovent.vercel.app/api/v1/auth";
-
-axios.defaults.withCredentials = true;
+const API_URL = API_ENDPOINTS.AUTH;
 
 export const useAuthStore = create((set) => ({
   user: null,
