@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import PaymentHistory from "../components/PaymentHistory";
-import { useAuthStore } from "../store/authStore";
+import AdminNav from "../components/AdminNav";
 
 export default function PaymentHistoryPage() {
   const navigate = useNavigate();
   const { status } = useParams();
   const [selectedStatus, setSelectedStatus] = useState(status || "completed");
-  const { signout } = useAuthStore();
 
   const statusOptions = [
-    { label: "Pending", value: "pending" },
-    { label: "Challenge By FDS", value: "challengeByFDS" },
     { label: "Completed", value: "completed" },
+    { label: "Pending", value: "pending" },
+    { label: "Challenge FDS", value: "challengeByFDS" },
     { label: "Denied", value: "denied" },
     { label: "Expired", value: "expired" },
     { label: "Cancelled", value: "cancelled" },
@@ -31,44 +30,35 @@ export default function PaymentHistoryPage() {
     }
   };
 
-  const handleLogout = async () => {
-    await signout();
-    navigate("/admin/signin");
-  };
-
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-6">
-      {/* Header: Payment History & Logout Button */}
-      <div className="flex justify-between items-center w-full mb-6">
-        <h1 className="text-xl sm:text-3xl font-bold text-gray-800">
-          Payment History
-        </h1>
-        <button
-          onClick={handleLogout}
-          className="px-4 sm:px-6 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition"
-        >
-          Logout
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <AdminNav />
 
-      {/* Status filter */}
-      <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-8">
-        {statusOptions.map(({ label, value }) => (
-          <button
-            key={value}
-            onClick={() => handleStatusChange(value)}
-            className={`px-4 sm:px-6 py-2 rounded-lg transition font-medium shadow-md text-sm sm:text-base ${
-              selectedStatus === value
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-800 hover:bg-blue-500 hover:text-white"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Status filter bar */}
+        <div className="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-gray-200 mb-8">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">
+            Filter Status Pembayaran
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {statusOptions.map(({ label, value }) => (
+              <button
+                key={value}
+                onClick={() => handleStatusChange(value)}
+                className={`px-3.5 py-1.5 rounded-xl transition text-xs sm:text-sm font-semibold ${
+                  selectedStatus === value
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <PaymentHistory status={selectedStatus} />
+        <PaymentHistory status={selectedStatus} />
+      </div>
     </div>
   );
 }

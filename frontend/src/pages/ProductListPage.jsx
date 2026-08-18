@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useProductStore } from "../store/productStore";
 import ProductForm from "../components/CrudProductForm";
+import AdminNav from "../components/AdminNav";
 import { formatCurrency } from "../utils/FormatCurrency";
 
 const ProductList = () => {
@@ -49,12 +50,14 @@ const ProductList = () => {
   );
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Product Management
-          </h1>
+    <div className="min-h-screen bg-gray-50">
+      <AdminNav />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">
+              Product Management
+            </h1>
           <p className="text-gray-600 mt-1">
             Manage your culinary products for both onsite and online sales
           </p>
@@ -335,6 +338,7 @@ const ProductList = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
