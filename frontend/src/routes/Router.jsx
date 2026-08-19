@@ -28,6 +28,8 @@ export default function RouterComponent() {
 
       {/* Protected Admin Routes */}
       <Route path="/admin">
+        {/* Index route for exact /admin path */}
+        <Route index element={<Navigate to="/admin/transaction" replace />} />
         <Route
           path="transaction"
           element={
