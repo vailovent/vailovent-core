@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCustomerOrders } from "../utils/orderHistoryHelper";
+import { getCustomerOrders, clearCustomerOrders } from "../utils/orderHistoryHelper";
 import { formatCurrency } from "../utils/FormatCurrency";
 import {
   FaReceipt,
@@ -12,16 +12,20 @@ import {
   FaSearch,
   FaExternalLinkAlt,
   FaCreditCard,
+  FaTrashAlt,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 
 export default function MyOrdersModal({ isOpen, onClose }) {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [searchOrderId, setSearchOrderId] = useState("");
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setOrders(getCustomerOrders());
+      setShowClearConfirm(false);
     }
   }, [isOpen]);
 
@@ -43,6 +47,12 @@ export default function MyOrdersModal({ isOpen, onClose }) {
   const handleOpenOrder = (orderId) => {
     onClose();
     navigate(`/payment-status?order_id=${encodeURIComponent(orderId)}`);
+  };
+
+  const handleClearHistory = () => {
+    clearCustomerOrders();
+    setOrders([]);
+    setShowClearConfirm(false);
   };
 
   const getCookingBadge = (cookingStatus) => {
@@ -166,6 +176,16 @@ export default function MyOrdersModal({ isOpen, onClose }) {
           </form>
         </div>
 
+        {/* Warning notice — data stored locally */}
+        <div className="px-4 sm:px-5 pt-3">
+          <div className="flex items-start gap-2 px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+            <FaExclamationTriangle className="text-amber-500 shrink-0 mt-0.5" />
+            <span>
+              Riwayat pesanan tersimpan di <strong>browser perangkat ini saja</strong>. Data dapat hilang jika Anda menghapus data browser atau menggunakan perangkat lain. Simpan <strong>Order ID</strong> Anda sebagai cadangan.
+            </span>
+          </div>
+        </div>
+
         {/* Order Cards List */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-3">
           {orders.length === 0 ? (
@@ -239,12 +259,51 @@ export default function MyOrdersModal({ isOpen, onClose }) {
           )}
         </div>
 
+        {/* Confirmation panel for clearing history */}
+        {showClearConfirm && (
+          <div className="px-5 py-4 bg-red-50 border-t border-red-200">
+            <div className="flex items-start gap-3 mb-3">
+              <FaExclamationTriangle className="text-red-500 shrink-0 mt-0.5 text-base" />
+              <div>
+                <p className="text-sm font-bold text-red-800">Hapus Semua Riwayat Pesanan?</p>
+                <p className="text-xs text-red-700 mt-0.5">
+                  Seluruh data riwayat pesanan di perangkat ini akan dihapus secara permanen dan <strong>tidak dapat dikembalikan</strong>. Pastikan Anda sudah mencatat Order ID yang masih diperlukan.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold rounded-xl text-xs transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleClearHistory}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5"
+              >
+                <FaTrashAlt />
+                Ya, Hapus Semua
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
-        <div className="bg-gray-50 px-5 py-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-          <span>Riwayat tersimpan di browser perangkat Anda</span>
+        <div className="bg-gray-50 px-5 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
+          {orders.length > 0 && !showClearConfirm && (
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-bold transition"
+            >
+              <FaTrashAlt className="text-[10px]" />
+              <span>Hapus Riwayat</span>
+            </button>
+          )}
+          {!orders.length || showClearConfirm ? <span /> : null}
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition"
+            className="ml-auto px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl text-xs transition"
           >
             Tutup
           </button>
@@ -253,3 +312,4 @@ export default function MyOrdersModal({ isOpen, onClose }) {
     </div>
   );
 }
+

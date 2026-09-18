@@ -63,6 +63,17 @@ export const saveCustomerOrder = (orderData) => {
 };
 
 /**
+ * Menghapus seluruh riwayat pesanan dari localStorage
+ */
+export const clearCustomerOrders = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (err) {
+    console.error("Failed to clear customer orders from localStorage:", err);
+  }
+};
+
+/**
  * Mengambil pesanan aktif terbaru yang belum selesai dimasak
  */
 export const getActiveCustomerOrder = () => {
@@ -101,3 +112,4 @@ export const getActiveCustomerOrdersCount = () => {
     return isRecent && isCookingIncomplete && isNotExpired;
   }).length;
 };
+
