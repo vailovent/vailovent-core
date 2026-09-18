@@ -39,12 +39,17 @@ export const saveCustomerOrder = (orderData) => {
       createdAt: orderData.createdAt || new Date().toISOString(),
       status: orderData.status || "pending",
       cooking_status: orderData.cooking_status || "Not Started",
+      payment_link: orderData.payment_link || null,
     };
 
     // Replace if exists, or prepend
     const index = existing.findIndex((o) => o.transaction_id === newEntry.transaction_id || o.order_id === newEntry.order_id);
     if (index !== -1) {
-      existing[index] = { ...existing[index], ...newEntry };
+      existing[index] = {
+        ...existing[index],
+        ...newEntry,
+        payment_link: newEntry.payment_link || existing[index].payment_link,
+      };
     } else {
       existing.unshift(newEntry);
     }

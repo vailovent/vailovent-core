@@ -66,6 +66,16 @@ const transactionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    payment_link: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    snap_token: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   { timestamps: true }
 );

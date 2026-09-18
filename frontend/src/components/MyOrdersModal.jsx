@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCustomerOrders } from "../utils/orderHistoryHelper";
 import { formatCurrency } from "../utils/FormatCurrency";
@@ -11,6 +11,7 @@ import {
   FaCheckCircle,
   FaSearch,
   FaExternalLinkAlt,
+  FaCreditCard,
 } from "react-icons/fa";
 
 export default function MyOrdersModal({ isOpen, onClose }) {
@@ -214,13 +215,24 @@ export default function MyOrdersModal({ isOpen, onClose }) {
                   <div>
                     {order.status === "completed" && getCookingBadge(order.cooking_status)}
                   </div>
-                  <button
-                    onClick={() => handleOpenOrder(order.order_id)}
-                    className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition ml-auto"
-                  >
-                    <span>Pantau Status Live</span>
-                    <FaExternalLinkAlt className="text-[10px]" />
-                  </button>
+                  <div className="flex items-center gap-2 ml-auto">
+                    {order.status === "pending" && (
+                      <button
+                        onClick={() => handleOpenOrder(order.order_id)}
+                        className="flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 px-3 py-1.5 rounded-xl shadow-sm transition active:scale-95"
+                      >
+                        <FaCreditCard className="text-xs" />
+                        <span>Bayar Sekarang</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleOpenOrder(order.order_id)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-xl transition"
+                    >
+                      <span>Lihat Detail</span>
+                      <FaExternalLinkAlt className="text-[10px]" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))

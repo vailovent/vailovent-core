@@ -195,4 +195,20 @@ export const useTransactionStore = create((set, get) => ({
       throw error;
     }
   },
+
+  getPaymentLink: async (transaction_id) => {
+    try {
+      const cleanId = transaction_id.replace("VAILOVENT-", "");
+      const response = await axios.get(
+        `${MIDTRANS_URL}/payment-link/${cleanId}`
+      );
+      if (response.data && response.data.success) {
+        return response.data.payment_link;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to get payment link:", error);
+      return null;
+    }
+  },
 }));

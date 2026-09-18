@@ -1,5 +1,8 @@
+const mongoose = require("mongoose");
 const { snap } = require("./setUpMidtrans");
 const Products = require("../../models/productSchema");
+const Transactions = require("../../models/transactionSchema");
+const TransactionItems = require("../../models/transactionItemSchema");
 const {
   sendPaymentEmail,
 } = require("../../middlewares/sendMail/sendPaymentEmail");
@@ -81,10 +84,14 @@ exports.createTransactionMidtrans = async (req, res) => {
     item_details: itemDetails,
   };
 
-  console.log(parameter);
-
   try {
     const transaction = await snap.createTransaction(parameter);
+
+    // Save payment_link and snap_token into Transactions document in DB
+    await Transactions.findByIdAndUpdate(transaction_id, {
+      payment_link: transaction.redirect_url,
+      snap_token: transaction.token,
+    });
 
     // Kirim email pembayaran jika belum pernah dikirim
     const existingEmailLog = await EmailLogs.findOne({
@@ -117,12 +124,103 @@ exports.createTransactionMidtrans = async (req, res) => {
     return res.status(200).json({
       success: true,
       redirect_url: transaction.redirect_url,
+      snap_token: transaction.token,
     });
   } catch (error) {
     console.error("Error creating transaction in Midtrans:", error);
     return res.status(500).json({
       success: false,
       message: "Terjadi kesalahan saat memproses transaksi pembayaran.",
+    });
+  }
+};
+
+/**
+ * Endpoint to retrieve or regenerate payment link for a pending transaction
+ */
+exports.getPaymentLink = async (req, res) => {
+  const { transaction_id } = req.params;
+
+  try {
+    if (!transaction_id || !mongoose.Types.ObjectId.isValid(transaction_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID Transaksi tidak valid",
+      });
+    }
+
+    const existingTransaction = await Transactions.findById(transaction_id);
+    if (!existingTransaction) {
+      return res.status(404).json({
+        success: false,
+        message: "Transaksi tidak ditemukan",
+      });
+    }
+
+    if (existingTransaction.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: `Transaksi sudah berstatus ${existingTransaction.status}`,
+        status: existingTransaction.status,
+      });
+    }
+
+    // If payment_link already exists in DB, return it immediately
+    if (existingTransaction.payment_link) {
+      return res.status(200).json({
+        success: true,
+        payment_link: existingTransaction.payment_link,
+        snap_token: existingTransaction.snap_token,
+      });
+    }
+
+    // Otherwise, fetch transaction items and create Snap transaction
+    const items = await TransactionItems.find({ transaction_id });
+    if (!items || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Item transaksi tidak ditemukan",
+      });
+    }
+
+    const itemDetails = items.map((item) => ({
+      id: item.product_id.toString(),
+      name: item.product_name || "Menu",
+      price: parseInt(item.unit_price, 10),
+      quantity: parseInt(item.qty, 10),
+    }));
+
+    const grossAmount = existingTransaction.total_amount;
+
+    const parameter = {
+      transaction_details: {
+        order_id: `VAILOVENT-${transaction_id}`,
+        gross_amount: grossAmount,
+      },
+      customer_details: {
+        first_name: existingTransaction.customer_name,
+        email: existingTransaction.customer_email,
+      },
+      item_details: itemDetails,
+    };
+
+    const snapResult = await snap.createTransaction(parameter);
+
+    await Transactions.findByIdAndUpdate(transaction_id, {
+      payment_link: snapResult.redirect_url,
+      snap_token: snapResult.token,
+    });
+
+    return res.status(200).json({
+      success: true,
+      payment_link: snapResult.redirect_url,
+      snap_token: snapResult.token,
+    });
+  } catch (error) {
+    console.error("Error retrieving Midtrans payment link:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Gagal mengambil link pembayaran dari Midtrans.",
     });
   }
 };

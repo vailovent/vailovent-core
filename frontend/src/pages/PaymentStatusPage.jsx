@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { useTransactionStore } from "../store/transactionStore";
 import { saveCustomerOrder } from "../utils/orderHistoryHelper";
+import { toast } from "react-toastify";
 import {
   FaClock,
   FaFire,
@@ -10,6 +11,9 @@ import {
   FaSyncAlt,
   FaCheck,
   FaExclamationCircle,
+  FaCreditCard,
+  FaExternalLinkAlt,
+  FaShoppingBag,
 } from "react-icons/fa";
 
 const COOKING_STAGES = [
@@ -32,7 +36,9 @@ const PaymentStatus = () => {
   const [paymentDetails, setPaymentDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { fetchTransaction } = useTransactionStore();
+  const [isPaying, setIsPaying] = useState(false);
+  const { fetchTransaction, getPaymentLink, syncTransactionStatus } =
+    useTransactionStore();
 
   const fetchData = useCallback(
     async (isManualRefresh = false) => {
@@ -62,13 +68,57 @@ const PaymentStatus = () => {
   useEffect(() => {
     fetchData();
 
-    // Auto poll cooking status every 15 seconds if order is successful
+    // Auto poll status every 12 seconds
     const interval = setInterval(() => {
       fetchData();
-    }, 15000);
+    }, 12000);
 
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  // Handler to open Midtrans payment link directly without checking email
+  const handleContinuePayment = async () => {
+    if (!paymentDetails || !paymentDetails.transaction) return;
+    const { transaction } = paymentDetails;
+
+    // 1. If payment_link already exists on transaction
+    if (transaction.payment_link) {
+      window.location.href = transaction.payment_link;
+      return;
+    }
+
+    // 2. Otherwise request from API
+    try {
+      setIsPaying(true);
+      const link = await getPaymentLink(transaction._id);
+      if (link) {
+        window.location.href = link;
+      } else {
+        toast.info(
+          "Link pembayaran sedang disiapkan. Silakan cek juga email Anda jika sudah terkirim."
+        );
+      }
+    } catch (err) {
+      console.error("Payment redirect error:", err);
+      toast.error("Gagal membuka halaman pembayaran Midtrans.");
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
+  // Handler to sync status directly with Midtrans API
+  const handleCheckStatus = async () => {
+    if (!paymentDetails || !paymentDetails.transaction) return;
+    try {
+      setIsRefreshing(true);
+      await syncTransactionStatus(paymentDetails.transaction._id);
+      await fetchData(true);
+    } catch (err) {
+      console.error("Sync error:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -106,8 +156,15 @@ const PaymentStatus = () => {
     statusParam === "settlement" ||
     statusParam === "capture" ||
     transaction.status === "completed";
-  const itemsArray = Array.isArray(transactionItems) ? transactionItems : [];
+  const isPending =
+    !isSuccess &&
+    (transaction.status === "pending" || statusParam === "pending");
+  const isExpiredOrFailed =
+    transaction.status === "expired" ||
+    transaction.status === "cancelled" ||
+    transaction.status === "denied";
 
+  const itemsArray = Array.isArray(transactionItems) ? transactionItems : [];
   const currentCookingStatus = transaction.cooking_status || "Not Started";
   const currentStageIndex = COOKING_STAGES.findIndex(
     (s) => s.key === currentCookingStatus
@@ -115,32 +172,74 @@ const PaymentStatus = () => {
 
   return (
     <div className="py-10 px-4 max-w-3xl mx-auto">
-      <div className="bg-white shadow-lg rounded-2xl overflow-hidden border border-gray-100">
+      <div className="bg-white shadow-xl rounded-3xl overflow-hidden border border-gray-100">
         {/* Header Status Card */}
         <div
-          className={`p-6 text-center text-white ${
+          className={`p-6 md:p-8 text-center text-white ${
             isSuccess
-              ? "bg-gradient-to-r from-green-500 to-emerald-600"
+              ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700"
+              : isPending
+              ? "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600"
               : "bg-gradient-to-r from-red-500 to-rose-600"
           }`}
         >
-          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl">
-            {isSuccess ? <FaCheckCircle /> : <FaExclamationCircle />}
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl shadow-inner backdrop-blur-sm">
+            {isSuccess ? (
+              <FaCheckCircle />
+            ) : isPending ? (
+              <FaClock className="animate-pulse" />
+            ) : (
+              <FaExclamationCircle />
+            )}
           </div>
-          <h1 className="text-2xl font-bold mb-1">
-            {isSuccess ? "Pembayaran Berhasil!" : "Pembayaran Belum Berhasil"}
-          </h1>
-          <p className="text-white/90 text-sm">
+          <h1 className="text-2xl sm:text-3xl font-extrabold mb-1.5 tracking-tight">
             {isSuccess
-              ? `Terima kasih ${transaction.customer_name || ""}, pesanan Meja #${transaction.table_code} sedang diproses.`
-              : "Silakan periksa kembali metode pembayaran Anda atau lakukan pemesanan ulang."}
+              ? "Pembayaran Berhasil!"
+              : isPending
+              ? "Menunggu Pembayaran"
+              : "Pembayaran Belum Berhasil"}
+          </h1>
+          <p className="text-white/95 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
+            {isSuccess
+              ? `Terima kasih ${transaction.customer_name || ""}, pesanan Meja #${transaction.table_code} sedang diproses di dapur.`
+              : isPending
+              ? `Pesanan Meja #${transaction.table_code} telah dibuat. Silakan selesaikan pembayaran untuk memproses pesanan ke dapur.`
+              : "Batas waktu pembayaran telah kedaluwarsa atau dibatalkan. Silakan lakukan pemesanan ulang menu favorit Anda."}
           </p>
         </div>
 
-        <div className="p-6 md:p-8 space-y-8">
+        <div className="p-6 md:p-8 space-y-6 sm:space-y-8">
+          {/* Pending Payment Notice & Direct CTA Banner */}
+          {isPending && (
+            <div className="p-5 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 rounded-2xl border border-amber-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shrink-0 shadow-sm mt-0.5 sm:mt-0">
+                  <FaCreditCard />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm sm:text-base">
+                    Lanjutkan Pembayaran Anda
+                  </h3>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Klik tombol untuk membuka halaman pembayaran Midtrans (QRIS / E-Wallet / Virtual Account) secara instan tanpa perlu membuka email.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleContinuePayment}
+                disabled={isPaying}
+                className="w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md shadow-blue-500/25 transition flex items-center justify-center gap-2 shrink-0 active:scale-95"
+              >
+                <FaCreditCard />
+                <span>{isPaying ? "Membuka Midtrans..." : "Bayar Sekarang"}</span>
+                <FaExternalLinkAlt className="text-[10px]" />
+              </button>
+            </div>
+          )}
+
           {/* Live Cooking Status Tracker (Only if Success) */}
           {isSuccess && (
-            <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-5 md:p-6">
+            <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-5 md:p-6">
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-base md:text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -148,7 +247,7 @@ const PaymentStatus = () => {
                     Status Pesanan Dapur
                   </h2>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Diperbarui otomatis setiap 15 detik
+                    Diperbarui otomatis setiap 12 detik
                   </p>
                 </div>
                 <button
@@ -210,7 +309,7 @@ const PaymentStatus = () => {
           )}
 
           {/* Transaction Metadata Info */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl text-sm border border-gray-100">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 sm:p-5 bg-gray-50 rounded-2xl text-sm border border-gray-100">
             <div>
               <p className="text-gray-500 text-xs">ID Transaksi</p>
               <p className="font-semibold text-gray-800 truncate" title={transaction._id}>
@@ -233,12 +332,13 @@ const PaymentStatus = () => {
 
           {/* Ordered Items Table */}
           <div>
-            <h3 className="text-base font-bold text-gray-800 mb-3">
-              Rincian Menu Dipesan
+            <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <FaShoppingBag className="text-blue-600" />
+              <span>Rincian Menu Dipesan</span>
             </h3>
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50 text-gray-600 text-xs font-semibold uppercase">
+                <thead className="bg-gray-50 text-gray-600 text-xs font-semibold uppercase tracking-wider">
                   <tr>
                     <th className="px-4 py-3 text-left">Menu</th>
                     <th className="px-4 py-3 text-center">Jumlah</th>
@@ -247,11 +347,11 @@ const PaymentStatus = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {itemsArray.map((item, index) => (
-                    <tr key={index}>
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                    <tr key={index} className="hover:bg-gray-50/80 transition">
+                      <td className="px-4 py-3 font-semibold text-gray-900">
                         {item.product_name}
                       </td>
-                      <td className="px-4 py-3 text-center text-gray-600">
+                      <td className="px-4 py-3 text-center font-medium text-gray-600">
                         {item.qty}x
                       </td>
                       <td className="px-4 py-3 text-right text-gray-900 font-semibold">
@@ -260,12 +360,12 @@ const PaymentStatus = () => {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-gray-50 font-bold text-gray-900 border-t border-gray-200">
+                <tfoot className="bg-gray-50/80 font-bold text-gray-900 border-t border-gray-200">
                   <tr>
-                    <td colSpan="2" className="px-4 py-3 text-right">
+                    <td colSpan="2" className="px-4 py-3.5 text-right text-sm text-gray-700">
                       Total Pembayaran:
                     </td>
-                    <td className="px-4 py-3 text-right text-blue-600 text-base">
+                    <td className="px-4 py-3.5 text-right text-blue-700 text-base font-extrabold">
                       Rp {parseFloat(transaction.total_amount || 0).toLocaleString("id-ID")}
                     </td>
                   </tr>
@@ -274,13 +374,39 @@ const PaymentStatus = () => {
             </div>
           </div>
 
-          {/* Action Button */}
-          <button
-            onClick={() => navigate("/")}
-            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition shadow-md active:scale-[0.99]"
-          >
-            Kembali ke Beranda
-          </button>
+          {/* Action Buttons Section */}
+          <div className="flex flex-col sm:flex-row items-stretch gap-3 pt-2">
+            {isPending && (
+              <>
+                <button
+                  onClick={handleContinuePayment}
+                  disabled={isPaying}
+                  className="flex-1 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold rounded-xl transition shadow-md shadow-blue-500/20 active:scale-[0.99] flex items-center justify-center gap-2"
+                >
+                  <FaCreditCard />
+                  <span>{isPaying ? "Menyiapkan Pembayaran..." : "Lanjutkan Pembayaran (Bayar Sekarang)"}</span>
+                </button>
+
+                <button
+                  onClick={handleCheckStatus}
+                  disabled={isRefreshing}
+                  className="px-5 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl transition flex items-center justify-center gap-2 border border-gray-200 shrink-0"
+                >
+                  <FaSyncAlt className={isRefreshing ? "animate-spin text-blue-600" : ""} />
+                  <span>Cek Status Pembayaran</span>
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={() => navigate("/")}
+              className={`${
+                isPending ? "px-5" : "w-full"
+              } py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition shadow-md active:scale-[0.99] flex items-center justify-center gap-2 shrink-0`}
+            >
+              <span>{isExpiredOrFailed ? "Pesan Ulang Menu" : "Kembali ke Beranda"}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
