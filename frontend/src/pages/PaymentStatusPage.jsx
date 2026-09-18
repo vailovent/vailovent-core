@@ -209,34 +209,6 @@ const PaymentStatus = () => {
         </div>
 
         <div className="p-6 md:p-8 space-y-6 sm:space-y-8">
-          {/* Pending Payment Notice & Direct CTA Banner */}
-          {isPending && (
-            <div className="p-5 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 rounded-2xl border border-amber-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shrink-0 shadow-sm mt-0.5 sm:mt-0">
-                  <FaCreditCard />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-sm sm:text-base">
-                    Lanjutkan Pembayaran Anda
-                  </h3>
-                  <p className="text-xs text-gray-600 mt-0.5">
-                    Klik tombol untuk membuka halaman pembayaran Midtrans (QRIS / E-Wallet / Virtual Account) secara instan tanpa perlu membuka email.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleContinuePayment}
-                disabled={isPaying}
-                className="w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md shadow-blue-500/25 transition flex items-center justify-center gap-2 shrink-0 active:scale-95"
-              >
-                <FaCreditCard />
-                <span>{isPaying ? "Membuka Midtrans..." : "Bayar Sekarang"}</span>
-                <FaExternalLinkAlt className="text-[10px]" />
-              </button>
-            </div>
-          )}
-
           {/* Live Cooking Status Tracker (Only if Success) */}
           {isSuccess && (
             <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-5 md:p-6">
@@ -374,39 +346,24 @@ const PaymentStatus = () => {
             </div>
           </div>
 
-          {/* Action Buttons Section */}
-          <div className="flex flex-col sm:flex-row items-stretch gap-3 pt-2">
-            {isPending && (
-              <>
-                <button
-                  onClick={handleContinuePayment}
-                  disabled={isPaying}
-                  className="flex-1 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold rounded-xl transition shadow-md shadow-blue-500/20 active:scale-[0.99] flex items-center justify-center gap-2"
-                >
-                  <FaCreditCard />
-                  <span>{isPaying ? "Menyiapkan Pembayaran..." : "Lanjutkan Pembayaran (Bayar Sekarang)"}</span>
-                </button>
-
-                <button
-                  onClick={handleCheckStatus}
-                  disabled={isRefreshing}
-                  className="px-5 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl transition flex items-center justify-center gap-2 border border-gray-200 shrink-0"
-                >
-                  <FaSyncAlt className={isRefreshing ? "animate-spin text-blue-600" : ""} />
-                  <span>Cek Status Pembayaran</span>
-                </button>
-              </>
-            )}
-
+          {/* Single Action Button */}
+          {isPending ? (
+            <button
+              onClick={handleContinuePayment}
+              disabled={isPaying}
+              className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold rounded-xl transition shadow-md shadow-blue-500/20 active:scale-[0.99] flex items-center justify-center gap-2"
+            >
+              <FaCreditCard />
+              <span>{isPaying ? "Menyiapkan Pembayaran..." : "Lanjutkan Pembayaran"}</span>
+            </button>
+          ) : (
             <button
               onClick={() => navigate("/")}
-              className={`${
-                isPending ? "px-5" : "w-full"
-              } py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition shadow-md active:scale-[0.99] flex items-center justify-center gap-2 shrink-0`}
+              className="w-full py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition shadow-md active:scale-[0.99] flex items-center justify-center gap-2"
             >
               <span>{isExpiredOrFailed ? "Pesan Ulang Menu" : "Kembali ke Beranda"}</span>
             </button>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -414,4 +371,3 @@ const PaymentStatus = () => {
 };
 
 export default PaymentStatus;
-
