@@ -38,6 +38,13 @@ exports.sendPaymentEmail = async (
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
 
+        <!-- Logo -->
+        <tr>
+          <td style="text-align:center;padding:24px 0 16px;background:#ffffff;">
+            <img src="https://ta-project-soundbox-payment-180294196054-us-east-1-an.s3.us-east-1.amazonaws.com/vailovent-logo-black" alt="Vailovent" style="max-height:40px;border:none;display:block;margin:0 auto;">
+          </td>
+        </tr>
+
         <!-- Header -->
         <tr>
           <td style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:36px 40px;text-align:center;">
