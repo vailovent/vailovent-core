@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /payment-status
+
+Sitemap: https://vailovent.vercel.app/sitemap.xml
