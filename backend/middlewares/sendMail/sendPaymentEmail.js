@@ -16,78 +16,123 @@ exports.sendPaymentEmail = async (
     },
   });
 
-  // Format jumlah uang menjadi format IDR (Rp)
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-    }).format(amount);
-  };
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(amount);
 
-  const itemsTable = items
+  const itemsRows = items
     .map(
       (item) => `
-    <tr>
-      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${
-        item.name
-      }</td>
-      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${
-        item.quantity
-      }</td>
-      <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${formatCurrency(
-        item.quantity * item.price
-      )}</td>
-    </tr>
-  `
+      <tr>
+        <td style="padding:12px 16px;border-bottom:1px solid #f0f0f0;color:#1a1a1a;font-size:14px;">${item.name}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #f0f0f0;text-align:center;color:#555;font-size:14px;">${item.quantity}x</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;color:#1a1a1a;font-size:14px;">${formatCurrency(item.quantity * item.price)}</td>
+      </tr>`
     )
     .join("");
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: customer_email,
-    subject: "Your Order is Created - Complete Your Payment",
-    html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2 style="color: #FFA500;">Hello ${customer_name},</h2>
-        <p>Your transaction has been successfully created. Please complete your payment using the details below:</p>
-        <hr>
-        <p><strong>Transaction ID:</strong> ${transaction_id}</p>
-        <p><strong>Total Amount:</strong> ${formatCurrency(gross_amount)}</p>
-        <p><strong>Status:</strong> Pending Payment</p>
-        <hr>
-        <h3>Items in Your Order</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-          <thead>
-            <tr style="background-color: #f1f1f1;">
-              <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Product</th>
-              <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Quantity</th>
-              <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsTable}
-          </tbody>
-          <tfoot>
-            <tr style="background-color: #f1f1f1;">
-              <td colspan="2" style="padding: 12px; border: 1px solid #ddd; text-align: center;"><strong>Total Amount</strong></td>
-              <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${formatCurrency(
-                gross_amount
-              )}</td>
-            </tr>
-          </tfoot>
-        </table>
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Selesaikan Pembayaran – Vailovent</title></head>
+<body style="margin:0;padding:0;background-color:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:32px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
 
-        <p style="font-size: 16px; text-align: center; color: #333;">Click the button below to proceed with your payment:</p>
-        <div style="text-align: center; margin-top: 20px;">
-          <a href="${payment_url}" style="padding: 12px 30px; background-color: #FFA500; color: white; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">Complete Payment</a>
-        </div>
-        
-        <p style="font-size: 16px; margin-top: 20px;">If you have any questions, feel free to contact us.</p>
-        <p style="font-size: 16px;">Thank you for shopping with us!</p>
-        <p style="font-size: 16px; text-align: center; color: #777;">Best Regards,</p>
-        <p style="font-size: 16px; text-align: center; color: #FFA500;"><strong>Vailovent</strong></p>
-      </div>
-    `,
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:36px 40px;text-align:center;">
+            <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:28px;margin-bottom:16px;">🛒</div>
+            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.3px;">Pesanan Berhasil Dibuat!</h1>
+            <p style="margin:8px 0 0;color:rgba(255,255,255,0.88);font-size:14px;">Segera selesaikan pembayaran Anda</p>
+          </td>
+        </tr>
+
+        <!-- Greeting -->
+        <tr>
+          <td style="padding:32px 40px 0;">
+            <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Halo, <strong>${customer_name}</strong> 👋</p>
+            <p style="margin:8px 0 0;font-size:15px;color:#6b7280;line-height:1.6;">Pesanan Anda di <strong style="color:#d97706;">Vailovent</strong> telah berhasil dibuat. Silakan selesaikan pembayaran agar pesanan segera diproses ke dapur.</p>
+          </td>
+        </tr>
+
+        <!-- Info Card -->
+        <tr>
+          <td style="padding:24px 40px 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;overflow:hidden;">
+              <tr>
+                <td style="padding:20px 24px;">
+                  <table width="100%" cellpadding="0" cellspacing="4">
+                    <tr>
+                      <td style="font-size:13px;color:#92400e;font-weight:500;padding:4px 0;">ID Transaksi</td>
+                      <td style="font-size:13px;color:#1a1a1a;font-weight:700;text-align:right;padding:4px 0;font-family:monospace;">${transaction_id}</td>
+                    </tr>
+                    <tr>
+                      <td style="font-size:13px;color:#92400e;font-weight:500;padding:4px 0;">Status</td>
+                      <td style="text-align:right;padding:4px 0;"><span style="display:inline-block;padding:2px 10px;background:#fef3c7;color:#92400e;border-radius:20px;font-size:12px;font-weight:700;">Menunggu Pembayaran</span></td>
+                    </tr>
+                    <tr>
+                      <td style="font-size:13px;color:#92400e;font-weight:500;padding:8px 0 4px;border-top:1px solid #fde68a;">Total Tagihan</td>
+                      <td style="font-size:18px;color:#d97706;font-weight:800;text-align:right;padding:8px 0 4px;border-top:1px solid #fde68a;">${formatCurrency(gross_amount)}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Items Table -->
+        <tr>
+          <td style="padding:24px 40px 0;">
+            <p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">Rincian Pesanan</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;overflow:hidden;">
+              <thead>
+                <tr style="background:#f9fafb;">
+                  <th style="padding:10px 16px;text-align:left;font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Menu</th>
+                  <th style="padding:10px 16px;text-align:center;font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Jml</th>
+                  <th style="padding:10px 16px;text-align:right;font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>${itemsRows}</tbody>
+              <tfoot>
+                <tr style="background:#f9fafb;">
+                  <td colspan="2" style="padding:14px 16px;font-size:14px;font-weight:700;color:#374151;">Total</td>
+                  <td style="padding:14px 16px;text-align:right;font-size:15px;font-weight:800;color:#d97706;">${formatCurrency(gross_amount)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA Button -->
+        <tr>
+          <td style="padding:32px 40px;text-align:center;">
+            <a href="${payment_url}" style="display:inline-block;padding:14px 40px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:700;letter-spacing:0.2px;box-shadow:0 4px 12px rgba(217,119,6,0.35);">
+              💳 &nbsp;Bayar Sekarang
+            </a>
+            <p style="margin:16px 0 0;font-size:12px;color:#9ca3af;">Tautan pembayaran ini bersifat unik dan hanya untuk Anda.</p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#f9fafb;border-top:1px solid #f0f0f0;padding:24px 40px;text-align:center;">
+            <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;">Ada pertanyaan? Hubungi kami di <a href="mailto:vailovent@gmail.com" style="color:#d97706;text-decoration:none;font-weight:600;">vailovent@gmail.com</a></p>
+            <p style="margin:8px 0 0;font-size:12px;color:#d1d5db;">&copy; 2024 <strong style="color:#6b7280;">Vailovent</strong>. All rights reserved.</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const mailOptions = {
+    from: `"Vailovent" <${process.env.EMAIL_USER}>`,
+    to: customer_email,
+    subject: `🛒 Pesanan Dibuat – Selesaikan Pembayaran Anda | Vailovent`,
+    html,
   };
 
   try {
