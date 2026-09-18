@@ -181,7 +181,7 @@ export default function MyOrdersModal({ isOpen, onClose }) {
           <div className="flex items-start gap-2 px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
             <FaExclamationTriangle className="text-amber-500 shrink-0 mt-0.5" />
             <span>
-              Riwayat pesanan tersimpan di <strong>browser perangkat ini saja</strong>. Data dapat hilang jika Anda menghapus data browser atau menggunakan perangkat lain. Simpan <strong>Order ID</strong> Anda sebagai cadangan.
+              Data tersimpan di <strong>browser ini saja</strong> — bisa hilang jika data browser dihapus. Struk lengkap sudah dikirim ke <strong>email</strong> Anda sebagai cadangan.
             </span>
           </div>
         </div>
